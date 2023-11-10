@@ -2,12 +2,24 @@ package main
 
 import (
 	"coworkingapp/handlers"
+	"coworkingapp/models"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 func main() {
 	gin.SetMode(gin.DebugMode)
+	dsn := "host=localhost port=54322 user=postgres password=postgres dbname=postgres sslmode=disable"
+	db, err := gorm.Open(postgres.Open(dsn))
+	if err != nil {
+		panic(err)
+	}
+	db.AutoMigrate(&models.User{})
+	db.AutoMigrate(&models.Room{})
+	db.AutoMigrate(&models.Photo{})
+	db.AutoMigrate(&models.Booking{})
 	r := gin.Default()
 
 	r.GET("/rooms", handlers.GetAllRooms)
