@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"net/http"
 	"time"
 
 	"gorm.io/gorm"
@@ -29,7 +30,7 @@ type Room struct {
 func GetRooms(db *gorm.DB, dayToBook time.Time) (res []Room, err error) {
 	err = db.Model(&Room{}).Preload("Bookings").Find(&res).Error
 	if err != nil {
-		return nil, err
+		return nil, CoworkingErr{StatusCode: http.StatusInternalServerError, Code: DbErr, Message: err.Error()}
 	}
 	for k, room := range res {
 		res[k].IsAvailable = true
@@ -47,9 +48,9 @@ func GetRoomById(db *gorm.DB, id string) (res *Room, err error) {
 	err = db.Model(&Room{}).First(&res, "id = ?", id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, err
+			return nil, CoworkingErr{StatusCode: http.StatusNotFound, Code: ObjectNotFoundErr, Message: err.Error()}
 		}
-		return nil, err
+		return nil, CoworkingErr{StatusCode: http.StatusInternalServerError, Code: DbErr, Message: err.Error()}
 	}
 	return
 }
@@ -57,11 +58,11 @@ func GetRoomById(db *gorm.DB, id string) (res *Room, err error) {
 func GetRoomPhotos(db *gorm.DB, id string) (res []string, err error) {
 	_, err = GetRoomById(db, id)
 	if err != nil {
-		return nil, err
+		return
 	}
 	err = db.Model(&Photo{}).Where("room_id = ?", id).Select("url").Find(&res).Error
 	if err != nil {
-		return nil, err
+		return nil, CoworkingErr{StatusCode: http.StatusInternalServerError, Code: DbErr, Message: err.Error()}
 	}
 	return
 }

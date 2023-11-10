@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"net/http"
 	"time"
 
 	"gorm.io/gorm"
@@ -20,7 +21,7 @@ type Booking struct {
 func CreateBooking(db *gorm.DB, booking Booking) (id *string, err error) {
 	err = db.Model(&Booking{}).Create(&booking).Error
 	if err != nil {
-		return nil, err
+		return nil, CoworkingErr{StatusCode: http.StatusInternalServerError, Code: DbErr, Message: err.Error()}
 	}
 	return
 }
@@ -28,7 +29,7 @@ func CreateBooking(db *gorm.DB, booking Booking) (id *string, err error) {
 func GetBookingsByUserId(db *gorm.DB, userId string) (res []Booking, err error) {
 	err = db.Model(&Booking{}).Where("user_id = ?", userId).Find(&res).Error
 	if err != nil {
-		return nil, err
+		return nil, CoworkingErr{StatusCode: http.StatusInternalServerError, Code: DbErr, Message: err.Error()}
 	}
 	return
 }
@@ -37,9 +38,9 @@ func GetBookingById(db *gorm.DB, id, userId string) (res *Booking, err error) {
 	err = db.Model(&Booking{}).Where("id = ? and user_id = ?", id, userId).First(&res).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, err
+			return nil, CoworkingErr{StatusCode: http.StatusNotFound, Code: ObjectNotFoundErr, Message: err.Error()}
 		}
-		return nil, err
+		return nil, CoworkingErr{StatusCode: http.StatusInternalServerError, Code: DbErr, Message: err.Error()}
 	}
 	return
 }
@@ -50,7 +51,7 @@ func DeleteBookingById(db *gorm.DB, id, userId string) error {
 		return err
 	}
 	if err := db.Model(&Booking{}).Delete(&booking).Error; err != nil {
-		return err
+		return CoworkingErr{StatusCode: http.StatusInternalServerError, Code: DbErr, Message: err.Error()}
 	}
 	return nil
 }
