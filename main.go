@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"os"
+
 	"coworkingapp/handlers"
 	"coworkingapp/middlewares"
 	"coworkingapp/models"
@@ -11,10 +14,21 @@ import (
 	"gorm.io/gorm"
 )
 
+var config models.CoworkingConfig
+
+func init() {
+	data, err := os.ReadFile("config/config.json")
+	if err != nil {
+		panic(err)
+	}
+	if err := json.Unmarshal(data, &config); err != nil {
+		panic(err)
+	}
+}
+
 func main() {
 	gin.SetMode(gin.DebugMode)
-	dsn := "host=localhost port=54322 user=postgres password=postgres dbname=postgres sslmode=disable"
-	db, err := gorm.Open(postgres.Open(dsn))
+	db, err := gorm.Open(postgres.Open(config.Dsn))
 	if err != nil {
 		panic(err)
 	}
@@ -25,9 +39,10 @@ func main() {
 	seedData(db)
 	r := gin.Default()
 	r.Use(middlewares.EarlyExitOnPreflightRequests())
-	r.Use(middlewares.SetCorsPolicy("http://localhost:5173"))
+	r.Use(middlewares.SetCorsPolicy(config.AllowedOrigins))
 	r.Use(func(c *gin.Context) {
 		c.Set("DbKey", db)
+		c.Set("ConfigKey", config)
 		c.Next()
 	})
 	r.GET("/rooms", handlers.GetAllRooms)

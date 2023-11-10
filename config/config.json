@@ -1,0 +1,5 @@
+{
+    "dsn": "host=localhost port=54322 user=postgres password=postgres dbname=postgres sslmode=disable",
+    "secret_key": "b9998ee435334b57b31cd28aae99610a",
+    "allowed_origins": "http://localhost:5173"
+}
