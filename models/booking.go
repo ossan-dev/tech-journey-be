@@ -1,6 +1,11 @@
 package models
 
-import "time"
+import (
+	"errors"
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Booking struct {
 	ID        string    `json:"id"`
@@ -10,4 +15,42 @@ type Booking struct {
 	UserId    string    `json:"-"`
 	Room      Room      `json:"-"`
 	User      User      `json:"-"`
+}
+
+func CreateBooking(db *gorm.DB, booking Booking) (id *string, err error) {
+	err = db.Model(&Booking{}).Create(&booking).Error
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+func GetBookingsByUserId(db *gorm.DB, userId string) (res []Booking, err error) {
+	err = db.Model(&Booking{}).Where("user_id = ?", userId).Find(&res).Error
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+func GetBookingById(db *gorm.DB, id, userId string) (res *Booking, err error) {
+	err = db.Model(&Booking{}).Where("id = ? and user_id = ?", id, userId).First(&res).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+		return nil, err
+	}
+	return
+}
+
+func DeleteBookingById(db *gorm.DB, id, userId string) error {
+	booking, err := GetBookingById(db, id, userId)
+	if err != nil {
+		return err
+	}
+	if err := db.Model(&Booking{}).Delete(&booking).Error; err != nil {
+		return err
+	}
+	return nil
 }
