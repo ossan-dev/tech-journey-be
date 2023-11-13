@@ -38,6 +38,7 @@ func main() {
 	db.AutoMigrate(&models.Booking{})
 	seedData(db)
 	r := gin.Default()
+	r.Static("/imgs", "./imgs")
 	r.Use(middlewares.EarlyExitOnPreflightRequests())
 	r.Use(middlewares.SetCorsPolicy(config.AllowedOrigins))
 	r.Use(func(c *gin.Context) {
