@@ -45,6 +45,8 @@ func main() {
 		c.Set("ConfigKey", config)
 		c.Next()
 	})
+	r.POST("/auth/login", handlers.Login)
+	r.POST("/auth/signup", handlers.Signup)
 	r.GET("/rooms", handlers.GetAllRooms)
 	r.GET("/rooms/:id", handlers.GetRoomById)
 	r.GET("/rooms/:id/photos", handlers.GetRoomPhotos)
