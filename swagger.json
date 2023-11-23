@@ -1,0 +1,778 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API for coworking app",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://virtserver.swaggerhub.com/LEOMUSS/CoworkingApp/1.0.0",
+            "description": "SwaggerHub API Auto Mocking"
+        }
+    ],
+    "tags": [
+        {
+            "name": "Auth",
+            "description": "endpoints for authentication"
+        },
+        {
+            "name": "Rooms",
+            "description": "endpoint to handle room management"
+        },
+        {
+            "name": "Bookings",
+            "description": "endpoint to handle booking management"
+        }
+    ],
+    "paths": {
+        "/auth/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Endpoint to login the user",
+                "description": "Endpoint to login the user",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserAuthInfo"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "user authenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoginRes"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input, object invalid",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized"
+                    },
+                    "500": {
+                        "description": "generic server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/signup": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Endpoint to register the user",
+                "description": "Endpoint to register the user",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SignupReq"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "user created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SignupRes"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "conflict, already present a user with same email",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "generic server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/rooms": {
+            "get": {
+                "tags": [
+                    "Rooms"
+                ],
+                "summary": "Endpoint to search the rooms based on the filter criteria",
+                "description": "Endpoint to search the rooms based on the filter criteria",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "day_to_book",
+                        "schema": {
+                            "type": "string",
+                            "example": "2023-06-24"
+                        },
+                        "description": "day we care about"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "available rooms",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/RoomEntity"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "generic server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/rooms/{id}": {
+            "get": {
+                "tags": [
+                    "Rooms"
+                ],
+                "summary": "Endpoint to get a room by id",
+                "description": "Endpoint to get a room by id",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "required": true,
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "specific room on the platform",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RoomEntity"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "room not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "generic server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/rooms/{id}/photos": {
+            "get": {
+                "tags": [
+                    "Rooms"
+                ],
+                "summary": "Endpoint to retrieve all the photos of a specific room",
+                "description": "Endpoint to retrieve all the photos of a specific room",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "required": true,
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "069dfef4-2e1c-4bff-9e26-04a9e2ee2f3c"
+                        },
+                        "description": "id of selected room"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "available rooms",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/GetRoomPhotosRes"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "room not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "generic server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/bookings": {
+            "post": {
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Endpoint to create a booking",
+                "description": "Endpoint to create booking",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BookingReq"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "booking created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BookingRes"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "user unauthorized"
+                    },
+                    "404": {
+                        "description": "room not found or unavailable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "generic server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "get": {
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Endpoint to get all room bookings made by the user",
+                "description": "Endpoint to get all room bookings made by the user. The user_id is taken directly from the JWT token.",
+                "responses": {
+                    "200": {
+                        "description": "your bookings",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/BookingEntity"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "user unathorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/bookings/{id}": {
+            "get": {
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Endpoint to get a booking by id",
+                "description": "Endpoint to get a booking by id",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "required": true,
+                        "name": "id",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "specific booking made by a logged user",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BookingEntity"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "room not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "generic server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Endpoint to delete a booking",
+                "description": "Endpoint to delete your booking",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the booking to delete",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "booking deleted"
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "user unauthenticated"
+                    },
+                    "404": {
+                        "description": "room not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "generic server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResponseError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "LoginRes": {
+                "required": [
+                    "token"
+                ],
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "example": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJPQmtwbUJmbFBEcV93eDVDdnJCRkdxNXY4LTZhek90SWNUdmJjcEhOMjBBIn0.eyJleHAiOjE2ODk2NjcwNjAsImlhdCI6MTY4OTY2NjQ2MCwiYXV0aF90aW1lIjoxNjg5NjY2MDA4LCJqdGkiOiJkMmYxOTk5YS0yNWVmLTQwMGMtYWQyMy04NTg0NjY3ZmQ3YWUiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDAvYXV0aC9yZWFsbXMvYWxib3NtYXJ0IiwiYXVkIjoiYWNjb3VudCIsInN1YiI6IjhlYTY0Mzc4LTgxMDAtNDg0MS04NjlkLTQ2MzIzZTExN2VmYiIsInR5cCI6IkJlYXJlciIsImF6cCI6ImFsYm9zbWFydC13ZWIiLCJub25jZSI6ImFYaFBiVk54UlhvMFpsZFZVRTlNVVZSSmEybE9kbFZyZUZCMFNXVm5PVnBIZVhaeGVXY3hTM2RVZHkxUiIsInNlc3Npb25fc3RhdGUiOiIzYjVmNzZjNy0xNDhjLTRiM2ItYTM5Yy0xM2Y3YjY2MjkxMWUiLCJhY3IiOiIxIiwiYWxsb3dlZC1vcmlnaW5zIjpbIioiXSwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iXX0sInJlc291cmNlX2FjY2VzcyI6eyJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50Iiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJvcGVuaWQgZW1haWwgcHJvZmlsZSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJuYW1lIjoiUGFvbG8gUm9zc2kiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJ1c2VyX3ByQHRlc3QudGVzdCIsImdpdmVuX25hbWUiOiJQYW9sbyIsImZhbWlseV9uYW1lIjoiUm9zc2kiLCJ1c2VySWQiOjEsImVtYWlsIjoidXNlcl9wckB0ZXN0LnRlc3QifQ.UXN4WQriBLT0rmT0_m3N7Jk3N4CcpfkpGhs_3OUWxpHVNSvx9_c2wJ0V9FtlOjfmdrAzWktmiWrzEB2NWQsi1bKiByvO1t4mUuVqdDINeWUfE7bSedmNf1SnaHxcegADXrO-5kft3iBt08Yj-E2Ej5msDEhwKHUJNL2MR9mAxrOQ1dXZ2P4wBnV3zOl_pIlqJhs3hTAk-ICHFzo7eIdlCO2FYAoiEZZ41L67MAOC4P3tOBHg-cSH74Qo2HP2Wfu5q7sFB7ORcDi-UaGkuKOAd1siGA2n62SDiZa-PH2PZHk2EgihHXUHwAg78eHlHSa_87nGVl64P7mTlv2PwkW59g"
+                    }
+                }
+            },
+            "ResponseError": {
+                "required": [
+                    "code",
+                    "message"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "example": "code_err"
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "error message"
+                    }
+                }
+            },
+            "BookingEntity": {
+                "required": [
+                    "id",
+                    "room_id",
+                    "booked_on",
+                    "created_at"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+                    },
+                    "room_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "39590436-fa5a-4a6a-9147-00b4c9b05aba"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "example": "2023-10-02T14:30:00.000"
+                    },
+                    "booked_on": {
+                        "type": "string",
+                        "example": "2023-10-07"
+                    }
+                }
+            },
+            "BookingReq": {
+                "required": [
+                    "booked_on",
+                    "room_id"
+                ],
+                "type": "object",
+                "properties": {
+                    "room_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+                    },
+                    "booked_on": {
+                        "type": "string",
+                        "example": "2023-10-05"
+                    }
+                }
+            },
+            "GetRoomPhotosRes": {
+                "required": [
+                    "id",
+                    "photos"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+                    },
+                    "photos": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "http://example.com/photo1.jpg",
+                            "http://example.com/photo2.jpg",
+                            "http://example.com/photo3.jpg"
+                        ]
+                    }
+                }
+            },
+            "RoomEntity": {
+                "required": [
+                    "category",
+                    "cost",
+                    "id",
+                    "name",
+                    "number_of_seats",
+                    "is_available",
+                    "main_photo"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Bellissima stanza"
+                    },
+                    "cost": {
+                        "type": "number",
+                        "example": 30
+                    },
+                    "number_of_seats": {
+                        "type": "number",
+                        "example": 5
+                    },
+                    "category": {
+                        "type": "string",
+                        "example": "Sala riunioni"
+                    },
+                    "is_available": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "main_photo": {
+                        "type": "string",
+                        "example": "http://www.example.com/photo1.jpg",
+                        "description": "the URI of the photo"
+                    }
+                }
+            },
+            "UserAuthInfo": {
+                "required": [
+                    "password",
+                    "username"
+                ],
+                "type": "object",
+                "properties": {
+                    "username": {
+                        "type": "string",
+                        "example": "prova@mail.com"
+                    },
+                    "password": {
+                        "type": "string",
+                        "example": "passwordonaimpossibile"
+                    }
+                }
+            },
+            "SignupReq": {
+                "required": [
+                    "email",
+                    "username",
+                    "password"
+                ],
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "john.doe@test.com"
+                    },
+                    "username": {
+                        "type": "string",
+                        "example": "John Doe"
+                    },
+                    "password": {
+                        "type": "string",
+                        "example": "your_password"
+                    }
+                }
+            },
+            "SignupRes": {
+                "required": [
+                    "id"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+                    }
+                }
+            },
+            "BookingRes": {
+                "required": [
+                    "id"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    }
+}
