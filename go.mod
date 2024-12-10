@@ -1,4 +1,4 @@
-module coworkingapp
+module github.com/ossan-dev/coworkingapp
 
 go 1.21.3
 

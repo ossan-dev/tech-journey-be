@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"coworkingapp/utils"
+	"github.com/ossan-dev/coworkingapp/utils"
 
 	"gorm.io/gorm"
 )

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"os"
 
-	"coworkingapp/handlers"
-	"coworkingapp/middlewares"
-	"coworkingapp/models"
-	"coworkingapp/utils"
+	"github.com/ossan-dev/coworkingapp/handlers"
+	"github.com/ossan-dev/coworkingapp/middlewares"
+	"github.com/ossan-dev/coworkingapp/models"
+	"github.com/ossan-dev/coworkingapp/utils"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"

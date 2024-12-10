@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"coworkingapp/models"
+	"github.com/ossan-dev/coworkingapp/models"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

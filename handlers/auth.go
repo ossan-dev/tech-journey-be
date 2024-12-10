@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	"coworkingapp/models"
-	"coworkingapp/utils"
+	"github.com/ossan-dev/coworkingapp/models"
+	"github.com/ossan-dev/coworkingapp/utils"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
