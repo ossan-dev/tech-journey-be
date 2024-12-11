@@ -18,7 +18,11 @@ func AuthorizeUser() gin.HandlerFunc {
 			return
 		}
 		secretKey := c.MustGet("ConfigKey").(models.CoworkingConfig).SecretKey
-		claims, err := utils.ValidateToken(tokenHeader, []byte(secretKey))
+		secretKeyRunes := [32]rune{}
+		for k, v := range secretKey {
+			secretKeyRunes[k] = v
+		}
+		claims, err := utils.ValidateToken(tokenHeader, secretKeyRunes)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, models.CoworkingErr{Code: models.TokenNotValidErr, Message: err.Error()})
 			return

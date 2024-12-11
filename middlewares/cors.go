@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//go:noinline
 func SetCorsPolicy(allowedOrigins string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", allowedOrigins)
@@ -15,6 +16,7 @@ func SetCorsPolicy(allowedOrigins string) gin.HandlerFunc {
 	}
 }
 
+//go:noinline
 func EarlyExitOnPreflightRequests() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method == http.MethodOptions {

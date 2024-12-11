@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/ossan-dev/coworkingapp/handlers"
@@ -14,9 +15,8 @@ import (
 	"gorm.io/gorm"
 )
 
-var config models.CoworkingConfig
-
-func init() {
+func main() {
+	var config models.CoworkingConfig
 	data, err := os.ReadFile("config/config.json")
 	if err != nil {
 		panic(err)
@@ -24,37 +24,32 @@ func init() {
 	if err := json.Unmarshal(data, &config); err != nil {
 		panic(err)
 	}
-}
-
-func main() {
-	gin.SetMode(gin.DebugMode)
-	db, err := gorm.Open(postgres.Open(config.Dsn))
+	if len(config.SecretKey) != 32 {
+		panic(fmt.Errorf("config.SecretKey must have 32 bytes"))
+	}
+	pgConfig := postgres.Config{
+		DSN: config.Dsn,
+	}
+	db, err := gorm.Open(postgres.Dialector{
+		Config: &pgConfig,
+	})
 	if err != nil {
 		panic(err)
 	}
-	db.AutoMigrate(&models.User{})
-	db.AutoMigrate(&models.Room{})
-	db.AutoMigrate(&models.Photo{})
-	db.AutoMigrate(&models.Booking{})
+	user := models.User{}
+	room := models.Room{}
+	photo := models.Photo{}
+	booking := models.Booking{}
+	err = db.AutoMigrate(&user, &room, &photo, &booking)
+	if err != nil {
+		panic(err)
+	}
 	seedData(db)
 	r := gin.Default()
-	r.Static("/imgs", "./imgs")
 	r.Use(middlewares.EarlyExitOnPreflightRequests())
 	r.Use(middlewares.SetCorsPolicy(config.AllowedOrigins))
-	r.Use(func(c *gin.Context) {
-		c.Set("DbKey", db)
-		c.Set("ConfigKey", config)
-		c.Next()
-	})
-	r.POST("/auth/login", handlers.Login)
-	r.POST("/auth/signup", handlers.Signup)
-	r.GET("/rooms", handlers.GetAllRooms)
-	r.GET("/rooms/:id", handlers.GetRoomById)
-	r.GET("/rooms/:id/photos", handlers.GetRoomPhotos)
-	r.GET("/bookings", middlewares.AuthorizeUser(), handlers.GetBookingsByUserId)
-	r.GET("/bookings/:id", middlewares.AuthorizeUser(), handlers.GetBookingById)
-	r.POST("/bookings", middlewares.AuthorizeUser(), handlers.AddBooking)
-	r.DELETE("/bookings/:id", middlewares.AuthorizeUser(), handlers.DeleteBooking)
+	r.Use(middlewares.SetRequestValues(*db, config))
+	handlers.SetupRoutes(r)
 
 	if err := r.Run(":8080"); err != nil {
 		panic(err)
@@ -62,35 +57,62 @@ func main() {
 }
 
 func seedData(db *gorm.DB) {
-	db.Delete(&models.Booking{}, "1 = 1")
-	db.Delete(&models.User{}, "1 = 1")
-	db.Delete(&models.Photo{}, "1 = 1")
-	db.Delete(&models.Room{}, "1 = 1")
+	sqldb, err := db.DB()
+	if err != nil {
+		panic(err)
+	}
+	defer sqldb.Close()
+
+	_, err = sqldb.Exec(`DELETE FROM public.bookings`)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = sqldb.Exec(`DELETE FROM public.users`)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = sqldb.Exec(`DELETE FROM public.photos`)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = sqldb.Exec(`DELETE FROM public.rooms`)
+	if err != nil {
+		panic(err)
+	}
+
 	userId := utils.GetUuid()
-	db.Create(&models.User{
+	user := models.User{
 		ID:       userId,
 		Email:    "ipesenti@sorint.com",
 		Username: "ipesenti",
 		Password: "abcd1234!!",
-	})
-	db.Create([]*models.Room{
+	}
+	db.Create(&user)
+	photosRoomGreen := [2]models.Photo{
+		{Url: "/green_0002.jpg"},
+		{Url: "/green_0003.jpg"},
+	}
+	photosRoomRed := [1]models.Photo{
+		{Url: "/red_0002.jpg"},
+	}
+	photosRoomYellow := [3]models.Photo{
+		{Url: "/yellow_0002.jpg"},
+		{Url: "/yellow_0003.jpg"},
+		{Url: "/yellow_0004.jpg"},
+	}
+	rooms := [3]models.Room{
 		{
-			ID: utils.GetUuid(), Name: "Green", Cost: 12.50, NumberOfSeats: 4, Category: "Open Space", MainPhoto: "/green_0001.jpg", Photos: []models.Photo{
-				{Url: "/green_0002.jpg"},
-				{Url: "/green_0003.jpg"},
-			},
+			ID: utils.GetUuid(), Name: "Green", Cost: 12.50, NumberOfSeats: 4, Category: "Open Space", MainPhoto: "/green_0001.jpg", Photos: photosRoomGreen[:],
 		},
 		{
-			ID: utils.GetUuid(), Name: "Red", Cost: 100.00, NumberOfSeats: 50, Category: "Conference Hall", MainPhoto: "/red_0001.jpg", Photos: []models.Photo{
-				{Url: "/red_0002.jpg"},
-			},
+			ID: utils.GetUuid(), Name: "Red", Cost: 100.00, NumberOfSeats: 50, Category: "Conference Hall", MainPhoto: "/red_0001.jpg", Photos: photosRoomRed[:],
 		},
 		{
-			ID: utils.GetUuid(), Name: "Yellow", Cost: 4.50, NumberOfSeats: 1, Category: "Shared Desk", MainPhoto: "/yellow_0001.jpg", Photos: []models.Photo{
-				{Url: "/yellow_0002.jpg"},
-				{Url: "/yellow_0003.jpg"},
-				{Url: "/yellow_0004.jpg"},
-			},
+			ID: utils.GetUuid(), Name: "Yellow", Cost: 4.50, NumberOfSeats: 1, Category: "Shared Desk", MainPhoto: "/yellow_0001.jpg", Photos: photosRoomYellow[:],
 		},
-	})
+	}
+	db.Create(&rooms)
 }

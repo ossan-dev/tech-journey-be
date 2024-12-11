@@ -20,7 +20,7 @@ func GenerateToken(email string, secretKey []byte) (string, error) {
 	return tokenString, nil
 }
 
-func ValidateToken(jwtToken string, secretKey []byte) (*jwt.MapClaims, error) {
+func ValidateToken(jwtToken string, secretKey [32]rune) (*jwt.MapClaims, error) {
 	token, err := jwt.Parse(strings.Replace(jwtToken, "Bearer ", "", 1), func(t *jwt.Token) (interface{}, error) {
 		_, ok := t.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
