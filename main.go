@@ -40,10 +40,12 @@ func main() {
 	room := models.Room{}
 	photo := models.Photo{}
 	booking := models.Booking{}
+	utils.PrintMemStats()
 	err = db.AutoMigrate(&user, &room, &photo, &booking)
 	if err != nil {
 		panic(err)
 	}
+	utils.PrintMemStats()
 	seedData(db)
 	r := gin.Default()
 	r.Use(middlewares.EarlyExitOnPreflightRequests())

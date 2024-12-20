@@ -13,6 +13,8 @@ Inspect the source code to get familiar with it. Understand its dependencies, lo
 First and foremost, you should empower the Go compiler about memory/CPU optimizations it takes based on your source code. By running it, you can start addressing things that are relevant to the area of code that needs to further being investigated.
 
 First command: `go build -gcflags=-m &>> compiler.txt`. Further ref: <https://askubuntu.com/a/420983/1546072>
+Second command: `go build -gcflags="-m -m" &>> compiler.txt`
+Third command: `go build -gcflags="-m -m -l" &>> compiler.txt`
 
 The first optimization is:
 
@@ -25,3 +27,30 @@ The first optimization is:
 ### 3. Measure Performance
 
 Now, you've optmized something and something not. The un-optimized things are left as they were. We need to make sure that they doesn't impact performance. Let's use th e `runtime` package.
+Basically, the only thing we're left with is to wrap the **unoptimized** call within the function invocation `PrintMemStats` which prints some memory information.  
+By doing that, we can make sure our calls doesn't affect too much the performance. For reference, you can have a look at the file `utils/mem_usage.go`. The fields of the `MemStats` struct we care about are:
+
+1. `Alloc`
+2. `TotalAlloc`
+3. `Sys`
+4. `NumGC`
+
+In our code we saw this impact:
+
+```text
+Before:
+
+Alloc = 1 MB
+TotalAlloc = 1 MB
+Sys = 7 MB
+NumGC = 0
+
+After:
+
+Alloc = 2 MB
+TotalAlloc = 2 MB
+Sys = 7 MB
+NumGC = 0
+```
+
+We can overlook this un-optimization since it's not worthwhile. Plus, this code will be run once at the program startup.
