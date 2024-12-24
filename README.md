@@ -8,11 +8,11 @@ This project will sustain my upcoming speech about Profiling & Tracing. It emula
 
 Inspect the source code to get familiar with it. Understand its dependencies, look at config files, potential bottlenecks, and so on.
 
-### 2. Compile-Time checks
+### 2. Compile-Time Checks
 
 First and foremost, you should empower the Go compiler about memory/CPU optimizations it takes based on your source code. By running it, you can start addressing things that are relevant to the area of code that needs to further being investigated.
 
-First command: `go build -gcflags=-m &>> compiler.txt`. Further ref: <https://askubuntu.com/a/420983/1546072>
+First command: `go build -gcflags=-m &>> compiler.txt`. Further ref: <https://askubuntu.com/a/420983/1546072>. The `&>>` operator creates the specified file if not exist or it appends to it.
 Second command: `go build -gcflags="-m -m" &>> compiler.txt`
 Third command: `go build -gcflags="-m -m -l" &>> compiler.txt`
 
@@ -54,3 +54,25 @@ NumGC = 0
 ```
 
 We can overlook this un-optimization since it's not worthwhile. Plus, this code will be run once at the program startup.
+
+### 4. Using Benchmarks
+
+Useful when you've two implementations of the same feature (e.g. two ways to parse JSON files and have the slices with the relevant data).
+The source code (which has two solvers function) is within the file `models/models.go`. Instead the benchmark is contained in the `models/models_test.go`.
+We used the sub-benchmark technique to keep it simpler and more readable.
+To execute it, `cd models/` and then `go test -bench=.`.
+
+```text
+goos: linux
+goarch: amd64
+pkg: github.com/ossan-dev/coworkingapp/models
+cpu: 13th Gen Intel(R) Core(TM) i7-1355U
+BenchmarkParsingJsonFile/ParseModelWithUnmarshal-1-rooms-12               154105              6793 ns/op            1184 B/op         20 allocs/op
+BenchmarkParsingJsonFile/ParseModelWithDecoder-1-rooms-12                 189138              6677 ns/op            1408 B/op         23 allocs/op
+BenchmarkParsingJsonFile/ParseModelWithUnmarshal-999-rooms-12                152           7368017 ns/op         2196225 B/op       8030 allocs/op
+BenchmarkParsingJsonFile/ParseModelWithDecoder-999-rooms-12                  217           5111452 ns/op         1261293 B/op       8018 allocs/op
+BenchmarkParsingJsonFile/ParseModelWithUnmarshal-9999-rooms-12                33          35786404 ns/op        28643201 B/op      80043 allocs/op
+BenchmarkParsingJsonFile/ParseModelWithDecoder-9999-rooms-12                  33          36373821 ns/op        18910856 B/op      80023 allocs/op
+PASS
+ok      github.com/ossan-dev/coworkingapp/models        9.407s
+```

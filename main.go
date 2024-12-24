@@ -85,36 +85,14 @@ func seedData(db *gorm.DB) {
 		panic(err)
 	}
 
-	userId := utils.GetUuid()
-	user := models.User{
-		ID:       userId,
-		Email:    "ipesenti@sorint.com",
-		Username: "ipesenti",
-		Password: "abcd1234!!",
+	user := models.User{}
+	if err := models.ParseModelWithUnmarshal(&user, "user.json"); err != nil {
+		panic(err)
 	}
 	db.Create(&user)
-	photosRoomGreen := [2]models.Photo{
-		{Url: "/green_0002.jpg"},
-		{Url: "/green_0003.jpg"},
-	}
-	photosRoomRed := [1]models.Photo{
-		{Url: "/red_0002.jpg"},
-	}
-	photosRoomYellow := [3]models.Photo{
-		{Url: "/yellow_0002.jpg"},
-		{Url: "/yellow_0003.jpg"},
-		{Url: "/yellow_0004.jpg"},
-	}
-	rooms := [3]models.Room{
-		{
-			ID: utils.GetUuid(), Name: "Green", Cost: 12.50, NumberOfSeats: 4, Category: "Open Space", MainPhoto: "/green_0001.jpg", Photos: photosRoomGreen[:],
-		},
-		{
-			ID: utils.GetUuid(), Name: "Red", Cost: 100.00, NumberOfSeats: 50, Category: "Conference Hall", MainPhoto: "/red_0001.jpg", Photos: photosRoomRed[:],
-		},
-		{
-			ID: utils.GetUuid(), Name: "Yellow", Cost: 4.50, NumberOfSeats: 1, Category: "Shared Desk", MainPhoto: "/yellow_0001.jpg", Photos: photosRoomYellow[:],
-		},
+
+	rooms := make([]models.Room, 0, 3)
+	if err := models.ParseModelWithUnmarshal(&rooms, "rooms.json"); err != nil {
 	}
 	db.Create(&rooms)
 }

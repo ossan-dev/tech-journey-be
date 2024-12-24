@@ -1,0 +1,21 @@
+[
+	{
+		"id": "79ca06f8-1163-48e8-b279-23fca5669623",
+		"name": "Green",
+		"cost": 12.5,
+		"number_of_seats": 4,
+		"category": "Open Space",
+		"main_photo": "/green_0001.jpg",
+		"IsAvailable": false,
+		"photos": [
+			{
+				"Url": "/green_0002.jpg",
+				"RoomId": "79ca06f8-1163-48e8-b279-23fca5669623"
+			},
+			{
+				"Url": "/green_0003.jpg",
+				"RoomId": "79ca06f8-1163-48e8-b279-23fca5669623"
+			}
+		]
+	}
+]
