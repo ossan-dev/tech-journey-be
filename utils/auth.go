@@ -26,7 +26,11 @@ func ValidateToken(jwtToken string, secretKey [32]rune) (*jwt.MapClaims, error) 
 		if !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
-		return secretKey, nil
+		secretKeyBytes := make([]byte, 32)
+		for k, v := range secretKey {
+			secretKeyBytes[k] = byte(v)
+		}
+		return secretKeyBytes, nil
 	})
 	if err != nil {
 		return nil, err

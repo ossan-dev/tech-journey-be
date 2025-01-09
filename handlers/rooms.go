@@ -21,8 +21,8 @@ func GetAllRooms(c *gin.Context) {
 			return
 		}
 	}
-	db := c.MustGet("DbKey").(*gorm.DB)
-	rooms, err := models.GetRooms(db, dayToBook)
+	db := c.MustGet("DbKey").(gorm.DB)
+	rooms, err := models.GetRooms(&db, dayToBook)
 	if err != nil {
 		coworkingErr := err.(models.CoworkingErr)
 		c.JSON(coworkingErr.StatusCode, coworkingErr)
@@ -32,8 +32,8 @@ func GetAllRooms(c *gin.Context) {
 }
 
 func GetRoomById(c *gin.Context) {
-	db := c.MustGet("DbKey").(*gorm.DB)
-	room, err := models.GetRoomById(db, c.Param("id"))
+	db := c.MustGet("DbKey").(gorm.DB)
+	room, err := models.GetRoomById(&db, c.Param("id"))
 	if err != nil {
 		coworkingErr := err.(models.CoworkingErr)
 		c.JSON(coworkingErr.StatusCode, coworkingErr)
@@ -43,8 +43,8 @@ func GetRoomById(c *gin.Context) {
 }
 
 func GetRoomPhotos(c *gin.Context) {
-	db := c.MustGet("DbKey").(*gorm.DB)
-	photos, err := models.GetRoomPhotos(db, c.Param("id"))
+	db := c.MustGet("DbKey").(gorm.DB)
+	photos, err := models.GetRoomPhotos(&db, c.Param("id"))
 	if err != nil {
 		coworkingErr := err.(models.CoworkingErr)
 		c.JSON(coworkingErr.StatusCode, coworkingErr)

@@ -26,8 +26,8 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.CoworkingErr{Code: models.ValidationErr, Message: err.Error()})
 		return
 	}
-	db := c.MustGet("DbKey").(*gorm.DB)
-	signedUser, err := models.LoginUser(db, userInfo.Username, userInfo.Password)
+	db := c.MustGet("DbKey").(gorm.DB)
+	signedUser, err := models.LoginUser(&db, userInfo.Username, userInfo.Password)
 	if err != nil {
 		coworkingErr := err.(models.CoworkingErr)
 		c.JSON(coworkingErr.StatusCode, coworkingErr)
@@ -48,9 +48,9 @@ func Signup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.CoworkingErr{Code: models.ValidationErr, Message: err.Error()})
 		return
 	}
-	db := c.MustGet("DbKey").(*gorm.DB)
+	db := c.MustGet("DbKey").(gorm.DB)
 	user := models.User{Email: signupReq.Email, Username: signupReq.Username, Password: signupReq.Password}
-	id, err := models.SignupUser(db, user)
+	id, err := models.SignupUser(&db, user)
 	if err != nil {
 		coworkingErr := err.(models.CoworkingErr)
 		c.JSON(coworkingErr.StatusCode, coworkingErr)

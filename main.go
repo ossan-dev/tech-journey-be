@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/gin-contrib/pprof"
 	"github.com/ossan-dev/coworkingapp/handlers"
 	"github.com/ossan-dev/coworkingapp/middlewares"
 	"github.com/ossan-dev/coworkingapp/models"
@@ -53,6 +54,8 @@ func main() {
 	r.Use(middlewares.SetRequestValues(*db, config))
 	handlers.SetupRoutes(r)
 
+	pprof.Register(r)
+
 	if err := r.Run(":8080"); err != nil {
 		panic(err)
 	}
@@ -63,7 +66,6 @@ func seedData(db *gorm.DB) {
 	if err != nil {
 		panic(err)
 	}
-	defer sqldb.Close()
 
 	_, err = sqldb.Exec(`DELETE FROM public.bookings`)
 	if err != nil {

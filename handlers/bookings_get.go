@@ -11,8 +11,8 @@ import (
 
 func GetBookingsByUserId(c *gin.Context) {
 	userId := c.MustGet("UserIdKey").(string)
-	db := c.MustGet("DbKey").(*gorm.DB)
-	bookings, err := models.GetBookingsByUserId(db, userId)
+	db := c.MustGet("DbKey").(gorm.DB)
+	bookings, err := models.GetBookingsByUserId(&db, userId)
 	if err != nil {
 		coworkingErr := err.(models.CoworkingErr)
 		c.JSON(coworkingErr.StatusCode, coworkingErr)
@@ -23,8 +23,8 @@ func GetBookingsByUserId(c *gin.Context) {
 
 func GetBookingById(c *gin.Context) {
 	userId := c.MustGet("UserIdKey").(string)
-	db := c.MustGet("DbKey").(*gorm.DB)
-	booking, err := models.GetBookingById(db, c.Param("id"), userId)
+	db := c.MustGet("DbKey").(gorm.DB)
+	booking, err := models.GetBookingById(&db, c.Param("id"), userId)
 	if err != nil {
 		coworkingErr := err.(models.CoworkingErr)
 		c.JSON(coworkingErr.StatusCode, coworkingErr)

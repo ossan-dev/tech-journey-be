@@ -43,8 +43,8 @@ func AddBooking(c *gin.Context) {
 		c.JSON(coworkingErr.StatusCode, coworkingErr)
 		return
 	}
-	db := c.MustGet("DbKey").(*gorm.DB)
-	id, err := models.CreateBooking(db, *model)
+	db := c.MustGet("DbKey").(gorm.DB)
+	id, err := models.CreateBooking(&db, *model)
 	if err != nil {
 		coworkingErr := err.(models.CoworkingErr)
 		c.JSON(coworkingErr.StatusCode, coworkingErr)

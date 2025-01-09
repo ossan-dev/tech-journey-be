@@ -28,8 +28,8 @@ func AuthorizeUser() gin.HandlerFunc {
 			return
 		}
 		email := (*claims)["sub"].(string)
-		db := c.MustGet("DbKey").(*gorm.DB)
-		user, err := models.GetUserByEmail(db, email)
+		db := c.MustGet("DbKey").(gorm.DB)
+		user, err := models.GetUserByEmail(&db, email)
 		if err != nil {
 			coworkingErr := err.(models.CoworkingErr)
 			c.JSON(coworkingErr.StatusCode, coworkingErr)
