@@ -5,10 +5,11 @@ import (
 	"github.com/ossan-dev/coworkingapp/middlewares"
 )
 
-func SetupRoutes(r *gin.Engine) {
+func SetupRoutes(r *gin.Engine, fr *FlightRecorderTracer) {
 	r.Static("/imgs", "./imgs")
 	r.POST("/auth/login", Login)
 	r.POST("/auth/signup", Signup)
+	r.GET("/trace", fr.Trace)
 	r.GET("/rooms", GetAllRooms)
 	r.GET("/rooms/:id", GetRoomById)
 	r.GET("/rooms/:id/photos", GetRoomPhotos)

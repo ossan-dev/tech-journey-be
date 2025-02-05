@@ -265,3 +265,69 @@ We can do the following considerations:
 - in the upper-most part of the graph, there are some nodes with high `cum` and small `flat` values, such as `gin.LoggerWithFunc`, `handlers.AddBooking`, `handlers.SetupRoutes`
 - they all have thick, solid, and red edges meaning they're using some resources and there aren't intermediate calls
 - The call to the `gin.LoggerWithConfig` has been inlined into the caller which is `gin.Next()`, as you can see from the `inline` on the edge
+
+### 6. trace
+
+#### Generate a Trace with the `debug/pprof/trace` Endpoint
+
+The steps needed to generate a trace to read are:
+
+1. Run the applications with tracing enabled
+2. Run the command that starts a 10-second trace. The command is `curl -v <http://localhost:8080/debug/pprof/trace?seconds=10> > trace.out`. It's best to keep it short. Otherwise, it will create multiple trace session to handle large amount of data
+3. Run the script to emulate some workload. The amount of operations done should be reduced to finish within the deadline
+
+#### Generate a Trace with the `FlightRecorder` Feature
+
+1. First, make sure to set the `FlightRecorder` up in your production app
+2. The setup code in the `main.go` file is:
+
+    ```go
+    fr := handlers.NewFlightRecorder()
+     if err := fr.FlightRecorderTracer.Start(); err != nil {
+      panic(err)
+     }
+     fr.FlightRecorderTracer.SetSize(4096)
+     defer func() {
+      if err := fr.FlightRecorderTracer.Stop(); err != nil {
+       panic(err)
+      }
+     }()
+    ```
+
+3. Then, you have to create an HTTP handler to serve the request:
+
+    ```go
+    func (f *FlightRecorderTracer) Trace(c *gin.Context) {
+     file, err := os.Create("cmd/flight_recorder.out")
+     if err != nil {
+      c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+      return
+     }
+     defer file.Close()
+     if _, err := f.FlightRecorderTracer.WriteTo(file); err != nil {
+      c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+      return
+     }
+     c.Status(http.StatusOK)
+    }
+    ```
+
+4. Defer an invocation to the `/trace` endpoint exposed by the HTTP Server
+5. You should find a trace file written on your disk
+
+> You can also write the file dynamically in each endpoint based on some custom logic.
+
+#### Read the trace
+
+Those are the considerations:
+
+1. Start reading the trace with the command: `go tool trace trace.out`
+2. Amount of time: 2538ms
+3. Heap Max Used: 9.2MiB
+4. Wall Duration GC: 3.9ms
+5. GC time relative to the elapsed time: 0.15%
+
+Two of the options you'll most likely to use are:
+
+- `View trace by proc`: the usual trace execution image you can find around
+- `Goroutine analysis`: a table listing all the goroutines' details

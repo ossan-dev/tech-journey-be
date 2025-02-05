@@ -8,6 +8,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
+	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
 )

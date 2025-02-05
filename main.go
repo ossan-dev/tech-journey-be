@@ -17,6 +17,16 @@ import (
 )
 
 func main() {
+	fr := handlers.NewFlightRecorder()
+	if err := fr.FlightRecorderTracer.Start(); err != nil {
+		panic(err)
+	}
+	fr.FlightRecorderTracer.SetSize(4096)
+	defer func() {
+		if err := fr.FlightRecorderTracer.Stop(); err != nil {
+			panic(err)
+		}
+	}()
 	var config models.CoworkingConfig
 	data, err := os.ReadFile("config/config.json")
 	if err != nil {
@@ -52,7 +62,7 @@ func main() {
 	r.Use(middlewares.EarlyExitOnPreflightRequests())
 	r.Use(middlewares.SetCorsPolicy(config.AllowedOrigins))
 	r.Use(middlewares.SetRequestValues(*db, config))
-	handlers.SetupRoutes(r)
+	handlers.SetupRoutes(r, fr)
 
 	pprof.Register(r)
 
