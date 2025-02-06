@@ -331,3 +331,210 @@ Two of the options you'll most likely to use are:
 
 - `View trace by proc`: the usual trace execution image you can find around
 - `Goroutine analysis`: a table listing all the goroutines' details
+
+### 7. `gops` tool
+
+`gops` is a tool developed at Google (it could be considered like the old version of the `pprof` & `trace` tools). It's needed to monitor and manage Go processes that run either locally or remotely.
+
+#### Installation
+
+First, you have to install it with the command `go install github.com/google/gops@latest`
+
+To confirm its installation, you can run either `which gops` or `gops --help`.
+
+#### Agent
+
+The diagnostic agent reports additionally information about processes we might want to further analyze. The information collected are (non exhaustive list):
+
+1. current stack trace
+2. go version used to build the process
+3. memory stats
+
+To enable the `gops` agent, we've to make a small code change in the program's startup logic.
+We changed the code in the `main.go` file to make it listen to the `gops` agent:
+
+```go
+ // gops agent
+ if err := agent.Listen(agent.Options{}); err != nil {
+  panic(err)
+ }
+```
+
+#### Usage
+
+First, you have to build the source code app.
+`gops` could be used locally by stating the `PID` or remotely by sticking to the `host:port` combination.
+Here, we'll show an example of the local usage. After you have run the binary compiled above, you'll be ready to issue some commands.
+
+##### `gops`
+
+By running the `gops` tools without any params you can see the `go` processes running on your machine (the columns names have been added by me):
+
+```shell
+PID    PPID  Name          Go version      Location of the program
+75672  75315 gopls         go1.23.4        /home/ossan/go/bin/gopls
+75686  75672 gopls         go1.23.4        /home/ossan/go/bin/gopls
+103370 94075 coworkingapp* go1.23.4        /home/ossan/Projects/tech-journey-be/coworkingapp
+103583 75348 gops          go1.23.4        /home/ossan/go/bin/gops
+```
+
+The `Go` version is the one we used to build the program.
+The **\*** (**star**) means the processes running a `gops` agent (in our case we enabled it above).
+
+##### `gops <PID> [duration]`
+
+We run `gops 103370` to see the details of our app.
+
+```shell
+parent PID:     94075
+threads:        12
+memory usage:   0.136%
+cpu usage:      0.406%
+username:       ossan
+cmd+args:       ./coworkingapp
+elapsed time:   07:25
+local/remote:   127.0.0.1:46377 <-> 0.0.0.0:0 (LISTEN)
+local/remote:   127.0.0.1:33206 <-> 127.0.0.1:54322 (ESTABLISHED)
+local/remote:   :::8080 <-> :::0 (LISTEN)
+```
+
+By running the command `gops 103370 2s`:
+
+```shell
+parent PID:     94075
+threads:        13
+memory usage:   0.139%
+cpu usage:      0.406%
+cpu usage (2s): 0.500%
+username:       ossan
+cmd+args:       ./coworkingapp
+elapsed time:   09:11
+local/remote:   127.0.0.1:46377 <-> 0.0.0.0:0 (LISTEN)
+local/remote:   127.0.0.1:33206 <-> 127.0.0.1:54322 (ESTABLISHED)
+local/remote:   :::8080 <-> :::0 (LISTEN)
+```
+
+This command will also report the amount of CPU used in the specified period which should match the format `time.ParseDuration` (e.g. `cpu usage (2s): 0.500%`).
+
+##### `gops tree`
+
+It displays all the trees of the current running process:
+
+```shell
+...
+├── 75315
+│   └── 75672 (gopls) {go1.23.4}
+│       └── 75686 (gopls) {go1.23.4}
+├── 75348
+│   └── 111870 (gops) {go1.23.4}
+└── 94075
+    └── [*]  103370 (coworkingapp) {go1.23.4}
+```
+
+#### `gops stack`
+
+`gops stack 103370` will return all the active stack traces per goroutines belonging to the requested `PID`.
+
+```shell
+...
+goroutine 1 [IO wait, 2 minutes]:
+internal/poll.runtime_pollWait(0x7d3bf35c6450, 0x72)
+        /usr/local/go/src/runtime/netpoll.go:351 +0x85
+internal/poll.(*pollDesc).wait(0xc000230f00?, 0x25?, 0x0)
+        /usr/local/go/src/internal/poll/fd_poll_runtime.go:84 +0x27
+internal/poll.(*pollDesc).waitRead(...)
+        /usr/local/go/src/internal/poll/fd_poll_runtime.go:89
+internal/poll.(*FD).Accept(0xc000230f00)
+        /usr/local/go/src/internal/poll/fd_unix.go:620 +0x295
+net.(*netFD).accept(0xc000230f00)
+        /usr/local/go/src/net/fd_unix.go:172 +0x29
+net.(*TCPListener).accept(0xc0000abac0)
+        /usr/local/go/src/net/tcpsock_posix.go:159 +0x1e
+net.(*TCPListener).Accept(0xc0000abac0)
+        /usr/local/go/src/net/tcpsock.go:372 +0x30
+net/http.(*Server).Serve(0xc0000ca2d0, {0xd4a418, 0xc0000abac0})
+        /usr/local/go/src/net/http/server.go:3330 +0x30c
+net/http.(*Server).ListenAndServe(0xc0000ca2d0)
+        /usr/local/go/src/net/http/server.go:3259 +0x71
+net/http.ListenAndServe(...)
+        /usr/local/go/src/net/http/server.go:3514
+github.com/gin-gonic/gin.(*Engine).Run(0xc000594340, {0xc000051ef8, 0x1, 0x1})
+        /home/ossan/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:399 +0x211
+main.main()
+        /home/ossan/Projects/tech-journey-be/main.go:78 +0x4c5
+...
+```
+
+#### `gops memstats`
+
+By running `gops memstats 103370`, you could see the memory stats of the requested process:
+
+```shell
+alloc: 4.38MB (4590944 bytes)
+total-alloc: 52.02MB (54542968 bytes)
+sys: 19.40MB (20337928 bytes)
+lookups: 0
+mallocs: 132297
+frees: 124170
+heap-alloc: 4.38MB (4590944 bytes)
+heap-sys: 11.34MB (11894784 bytes)
+heap-idle: 5.15MB (5398528 bytes)
+heap-in-use: 6.20MB (6496256 bytes)
+heap-released: 3.01MB (3153920 bytes)
+heap-objects: 8127
+stack-in-use: 672.00KB (688128 bytes)
+stack-sys: 672.00KB (688128 bytes)
+stack-mspan-inuse: 112.66KB (115360 bytes)
+stack-mspan-sys: 159.38KB (163200 bytes)
+stack-mcache-inuse: 14.06KB (14400 bytes)
+stack-mcache-sys: 15.23KB (15600 bytes)
+other-sys: 2.97MB (3112617 bytes)
+gc-sys: 2.87MB (3011264 bytes)
+next-gc: when heap-alloc >= 7.39MB (7747016 bytes)
+last-gc: 2025-02-06 15:56:23.871439777 +0100 CET
+gc-pause-total: 2.325873ms
+gc-pause: 175077
+gc-pause-end: 1738853783871439777
+num-gc: 17
+num-forced-gc: 0
+gc-cpu-fraction: 4.687698217513668e-06
+enable-gc: true
+debug-gc: false
+```
+
+#### `gops gc <PID>`
+
+You can force a GC cycle on the target process. It will block until the GC cycle has been completed.
+
+#### `gops setgc`
+
+It will set the GC on the target process. Examples are:
+
+1. `gops setgc <PID> 10`: to set it to 10%
+2. `gops setgc <PID> off`: to turn the GC off
+
+#### `gops version <PID>`
+
+It's used to see with which Go version a program has been built. The command `gops version 103370` yield `go1.23.4`.
+
+#### `gops stats <PID>`
+
+It prints runtime statistics. `gops stats 103370` prints:
+
+```shell
+goroutines: 4
+OS threads: 15
+GOMAXPROCS: 12
+num CPU: 12
+```
+
+#### `gops pprof` commands
+
+By using `gops` you can also access the capabilities of the `pprof` tool.
+Some commands are:
+
+1. `gops pprof-cpu <PID>`: it starts a 30-second CPU profile. Then, you land to the `pprof` interactive console
+2. `gops pprof-heap <PID>`: it runs a heap-based profile. Then, you land to the `pprof` interactive console
+3. `gops trace <PID>`: it runs a 5-second trace.
+
+> **Please be sure to not have started a trace in your web server, otherwise you'll get an error similar to this `gops: runtime error: tracing is already enabled`.**

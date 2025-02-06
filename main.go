@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/gin-contrib/pprof"
+	"github.com/google/gops/agent"
 	"github.com/ossan-dev/coworkingapp/handlers"
 	"github.com/ossan-dev/coworkingapp/middlewares"
 	"github.com/ossan-dev/coworkingapp/models"
@@ -17,6 +18,12 @@ import (
 )
 
 func main() {
+	// gops agent
+	if err := agent.Listen(agent.Options{}); err != nil {
+		panic(err)
+	}
+
+	// flight recorder
 	fr := handlers.NewFlightRecorder()
 	if err := fr.FlightRecorderTracer.Start(); err != nil {
 		panic(err)
@@ -27,6 +34,8 @@ func main() {
 			panic(err)
 		}
 	}()
+
+	// app Main code
 	var config models.CoworkingConfig
 	data, err := os.ReadFile("config/config.json")
 	if err != nil {
