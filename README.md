@@ -538,3 +538,232 @@ Some commands are:
 3. `gops trace <PID>`: it runs a 5-second trace.
 
 > **Please be sure to not have started a trace in your web server, otherwise you'll get an error similar to this `gops: runtime error: tracing is already enabled`.**
+
+### 8. Stress-Tests Tools
+
+Here, we'll see a couple of tools that will help you in smoothening your stress-testing experience. The first one is `hey`.
+
+#### The `hey` tool
+
+First, be sure to have `hey` tool installed on your machine. You can download it from [here](https://github.com/rakyll/hey). After you downloaded the binary, please move it to the `$PATH` folder to run it anywhere.
+
+> You can rename to **hey** the binary.
+
+Then, run the command `which hey` or `hey` to confirm its installation.
+
+Before going ahead, let's install another tool (via Go) that will help us with the visualization. Run the command `go get -u github.com/asoorm/hey-hdr` for a system-wide installation of the tool.
+
+First, make sure to run the application. Then, you're ready to run some commands and inspect the results.  
+  
+Here's a list commands run:
+
+1. `hey http://localhost:8080/rooms`
+
+    ```text
+    Summary:
+      Total:        0.1949 secs
+      Slowest:      0.1462 secs
+      Fastest:      0.0004 secs
+      Average:      0.0413 secs
+      Requests/sec: 1026.3224
+      
+      Total data:   109400 bytes
+      Size/request: 547 bytes
+
+    Response time histogram:
+      0.000 [1]     |
+      0.015 [81]    |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+      0.030 [14]    |■■■■■■■
+      0.044 [28]    |■■■■■■■■■■■■■■
+      0.059 [16]    |■■■■■■■■
+      0.073 [17]    |■■■■■■■■
+      0.088 [11]    |■■■■■
+      0.102 [8]     |■■■■
+      0.117 [11]    |■■■■■
+      0.132 [9]     |■■■■
+      0.146 [4]     |■■
+
+
+    Latency distribution:
+      10% in 0.0028 secs
+      25% in 0.0071 secs
+      50% in 0.0314 secs
+      75% in 0.0671 secs
+      90% in 0.1086 secs
+      95% in 0.1205 secs
+      99% in 0.1459 secs
+
+    Details (average, fastest, slowest):
+      DNS+dialup:   0.0002 secs, 0.0004 secs, 0.1462 secs
+      DNS-lookup:   0.0002 secs, 0.0000 secs, 0.0011 secs
+      req write:    0.0000 secs, 0.0000 secs, 0.0005 secs
+      resp wait:    0.0409 secs, 0.0004 secs, 0.1447 secs
+      resp read:    0.0001 secs, 0.0000 secs, 0.0020 secs
+
+    Status code distribution:
+      [200] 200 responses
+    ```
+
+2. The pattern seems okay. We have 43% of the total calls with a response time `<= 15ms`. If we take into consideration `50ms` as an acceptable time, the percentage goes up to 65.60%. We won't see any increasing pattern or spike in the calls with most latency
+3. `hey -n 10000 -c 8 http://localhost:8080/rooms` will send 10.000 request by using 8 connections
+
+    ```text
+    Summary:
+      Total:        3.2958 secs
+      Slowest:      0.0339 secs
+      Fastest:      0.0002 secs
+      Average:      0.0026 secs
+      Requests/sec: 3034.1612
+      
+      Total data:   5470000 bytes
+      Size/request: 547 bytes
+
+    Response time histogram:
+      0.000 [1]     |
+      0.004 [7384]  |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+      0.007 [1599]  |■■■■■■■■■
+      0.010 [727]   |■■■■
+      0.014 [210]   |■
+      0.017 [46]    |
+      0.020 [22]    |
+      0.024 [6]     |
+      0.027 [2]     |
+      0.031 [2]     |
+      0.034 [1]     |
+
+
+    Latency distribution:
+      10% in 0.0004 secs
+      25% in 0.0006 secs
+      50% in 0.0010 secs
+      75% in 0.0048 secs
+      90% in 0.0069 secs
+      95% in 0.0084 secs
+      99% in 0.0131 secs
+
+    Details (average, fastest, slowest):
+      DNS+dialup:   0.0000 secs, 0.0002 secs, 0.0339 secs
+      DNS-lookup:   0.0000 secs, 0.0000 secs, 0.0003 secs
+      req write:    0.0000 secs, 0.0000 secs, 0.0023 secs
+      resp wait:    0.0025 secs, 0.0001 secs, 0.0337 secs
+      resp read:    0.0000 secs, 0.0000 secs, 0.0010 secs
+
+    Status code distribution:
+      [200] 10000 responses
+    ```
+
+4. A full list of params can be found by running `hey`:
+
+    ```text
+    Usage: hey [options...] <url>
+
+    Options:
+      -n  Number of requests to run. Default is 200.
+      -c  Number of workers to run concurrently. Total number of requests cannot
+          be smaller than the concurrency level. Default is 50.
+      -q  Rate limit, in queries per second (QPS) per worker. Default is no rate limit.
+      -z  Duration of application to send requests. When duration is reached,
+          application stops and exits. If duration is specified, n is ignored.
+          Examples: -z 10s -z 3m.
+      -o  Output type. If none provided, a summary is printed.
+          "csv" is the only supported alternative. Dumps the response
+          metrics in comma-separated values format.
+
+      -m  HTTP method, one of GET, POST, PUT, DELETE, HEAD, OPTIONS.
+      -H  Custom HTTP header. You can specify as many as needed by repeating the flag.
+          For example, -H "Accept: text/html" -H "Content-Type: application/xml" .
+      -t  Timeout for each request in seconds. Default is 20, use 0 for infinite.
+      -A  HTTP Accept header.
+      -d  HTTP request body.
+      -D  HTTP request body from file. For example, /home/user/file.txt or ./file.txt.
+      -T  Content-type, defaults to "text/html".
+      -a  Basic authentication, username:password.
+      -x  HTTP Proxy address as host:port.
+      -h2 Enable HTTP/2.
+
+      -host HTTP Host header.
+
+      -disable-compression  Disable compression.
+      -disable-keepalive    Disable keep-alive, prevents re-use of TCP
+                            connections between different HTTP requests.
+      -disable-redirects    Disable following of HTTP redirects
+      -cpus                 Number of used cpu cores.
+                            (default for current machine is 12 cores)
+    ```
+
+#### The Apache Bench or `ab` tool
+
+Another tool for performance testing is Apache Bench. The installation process is:
+
+1. Run `sudo apt-get update`
+2. Run `sudo apt-get install apache2-utils`. Please note that this tool can be installed on whatever machine you want. It doesn't have to be installed on the same machine that hosts the target web server
+
+To verify the installation, run the command `ab -V` to print the version and exit.  
+  
+We can run some commands:
+
+1. `ab -c 100 -n 20000 -r <http://localhost:8080/rooms>` where:
+    1. `-c` means the number of requests to perform per time. Default is one request per time
+    2. `-n` means the number of requests to perform in the benchmarking session. Default is to perform a single request
+    3. `-r` means to not exit on socket receive errors
+    4. As a positional argument we've to specify the target URL to benchmark
+
+    ```text
+    Benchmarking localhost (be patient)
+    Completed 2000 requests
+    Completed 4000 requests
+    Completed 6000 requests
+    Completed 8000 requests
+    Completed 10000 requests
+    Completed 12000 requests
+    Completed 14000 requests
+    Completed 16000 requests
+    Completed 18000 requests
+    Completed 20000 requests
+    Finished 20000 requests
+
+
+    Server Software:        
+    Server Hostname:        localhost
+    Server Port:            8080
+
+    Document Path:          /rooms
+    Document Length:        547 bytes
+
+    Concurrency Level:      100
+    Time taken for tests:   15.881 seconds
+    Complete requests:      20000
+    Failed requests:        0
+    Total transferred:      16380000 bytes
+    HTML transferred:       10940000 bytes
+    Requests per second:    1259.38 [#/sec] (mean)
+    Time per request:       79.404 [ms] (mean)
+    Time per request:       0.794 [ms] (mean, across all concurrent requests)
+    Transfer rate:          1007.26 [Kbytes/sec] received
+
+    Connection Times (ms)
+                  min  mean[+/-sd] median   max
+    Connect:        0    0   0.5      0       9
+    Processing:     1   79  65.2     96     318
+    Waiting:        0   78  65.2     95     318
+    Total:          1   79  65.3     96     318
+
+    Percentage of the requests served within a certain time (ms)
+      50%     96
+      66%    117
+      75%    131
+      80%    137
+      90%    154
+      95%    170
+      98%    204
+      99%    252
+     100%    318 (longest request)
+    ```
+
+2. Some relevant values are:
+    1. _Document Length_: it's the size in bytes of the first successful document returned. If the response length changes during the test, it's considered an error
+    2. _Concurrency Level_: number of concurrent clients (equivalents to web browsers) used during the test
+    3. _Time taken for tests_: elapsed time between the creation of the first socket to the moment the last response is received
+    4. _Complete requests_: number of successful responses received
+    5. _Requests per seconds_: self-explanatory
+    6. _Time per request_: self-explanatory
