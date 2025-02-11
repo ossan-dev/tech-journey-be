@@ -767,3 +767,40 @@ We can run some commands:
     4. _Complete requests_: number of successful responses received
     5. _Requests per seconds_: self-explanatory
     6. _Time per request_: self-explanatory
+
+### 9. coredumps, crashdumps
+
+Before you start looking into coredumps, make sure your `ulimit` is set to something reasonable. It defaults to `0`, which means the max core file size can be `zero`. On development machine, this can be set to `unlimited` by using this command:
+
+`ulimit -c unlimited`
+
+To check the value, you can run `ulimit -c` and you should get back `unlimited`.
+
+> _Please note this command must be run in the folder where you want to generate core dump files._
+
+**Crashdumps** are **coredumps** written to the disk when a program is crashing. By default Go doesn't enable crashdumps but you can do the following:
+
+1. Build your application.  
+    **Please note that the values of variables won't be clear due to compiler optimizations.**
+2. Make sure to build the app with the command: `go build -gcflags=all="-N -l" -o coworkingapp`
+3. Run it with the command `GOTRACEBACK=crash ./coworkingapp`
+4. Send the signal `SIGQUIT` to the web server within the same active shell. The keyboard shortcut should eb `Ctrl + \` but this may vary based on your machine/shell/IDE
+5. You will have the program stack traces printed in the console (and a core dump file written)
+
+To get a core dump without having to kill the process, you can follow this:
+
+1. Run the web server with `./coworkingapp` (the compilation is the same as above)
+2. Find the PID of the server (you can use `gops`)
+3. Download a core dump file with the `gcore` command `gcore <PID>`
+4. You can start inspecting the file by using the command: `dlv core ./coworkingapp core.44457`, where `./coworkingapp` is the name of the binary and `core.44457` is the core dump file
+
+From this point you have all the commands of the `dlv` interactive console such as:
+
+- `bt` to list frames and see the last visible frame
+- `ls` to show the source code related to the last visible frame
+- `frame <frameNumber>` to pick a specific frame. You can use the number on the left
+- `locals` to print the values of local variables in scope at the moment of the crash
+- `p <variableName>` to check value of a specific variable
+- `vars <packageName>` to dump package variables
+
+Some features will be disabled since the core dump is not an active process but it's a snapshot.
