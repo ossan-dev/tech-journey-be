@@ -804,3 +804,89 @@ From this point you have all the commands of the `dlv` interactive console such 
 - `vars <packageName>` to dump package variables
 
 Some features will be disabled since the core dump is not an active process but it's a snapshot.
+
+### 10. Go Env Vars
+
+We can set Go env vars to change the runtime behavior.
+> Make sure to rebuild the binary since the compiler optimizations have been disabled by the last build command.
+
+#### GOGC
+
+The `GOGC` var sets the aggressviness of the Garbage Collector. Default Value `100` (when the heap doubles in size).
+
+1. To run it **less** often, let's say when the heap gets 4x: `GOGC=200 ./coworkingapp`
+2. To run it **more** often, run `GOGC=20 ./coworkingapp`
+3. To disable it, `GOGC=off ./coworkingapp`
+
+### GOTRACEBACK
+
+The `GOTRACEBACK` controls the level of details when a panic hits the top of our program. Default Value `single` (prints only the goroutine which seems to have caused the issue).
+
+1. To run it and suppress all tracebacks, `GOTRACEBACK=none ./coworkingapp`
+
+### GOMAXPROCS
+
+> Since we're going to use the trace tool here, please be sure to be able to download a trace from the trace endpoint. If not, disable the trace added in the `gops` section and rebuild the binary.  
+  
+The `GOMAXPROCS` controls the number of OS threads allocated to goroutines in our program. Default Value is the number of cores (or whatever your machine considers a CPU) visible at program startup.
+
+1. `GOMAXPROCS=4 ./coworkingapp` will set the number of OS threads to use to `4`
+2. To confirm this, you can issue the command `curl -v http://localhost:8080/debug/pprof/trace?seconds=10 > four_procs_trace.out`
+3. Open the trace with `go tool trace four_procs_trace.out`
+4. Select `View by procs`. You should see a decreased number of procs used
+
+### GOMEMLIMIT
+
+Used to set the maximum amount of memory the Go program can use. This is usually set when you experience `OOM` crashes. A reasonable value could be the 80% of the total machine memory.
+To limit the program to use only 5MiB, you should use the command:
+
+```shell
+GOMEMLIMIT=5000000 ./coworkingapp
+```
+
+### GODEBUG
+
+To better understand the GC performance, we can enable the `gctrace` facility. To enable the program to report the GC data, you should run it with this command:
+
+```shell
+GODEBUG=gctrace=1 ./coworkingapp
+```
+
+The first output line will be something close to:
+
+```text
+gc 1 @0.009s 2%: 0.087+1.0+0.011 ms clock, 1.0+0.72/1.7/0.040+0.13 ms cpu, 4->4->3 MB, 4 MB goal, 0 MB stacks, 0 MB globals, 12 P
+```
+
+It shows you:
+
+- amount of time spent in each GC phase
+- various heap size during the GC cycles
+- timestamp of when the GC cycles completed compared to the start time of the program
+
+If you leave the program up, you'll notice other entries in the console such as:
+
+```text
+gc 2 @27.055s 0%: 0.13+1.4+0.032 ms clock, 1.5+0.37/2.8/0.71+0.39 ms cpu, 6->6->3 MB, 6 MB goal, 0 MB stacks, 0 MB globals, 12 P
+gc 3 @121.179s 0%: 0.14+1.4+0.042 ms clock, 1.6+0.57/2.3/1.1+0.51 ms cpu, 7->7->3 MB, 7 MB goal, 0 MB stacks, 0 MB globals, 12 P
+gc 4 @209.288s 0%: 0.090+1.8+0.042 ms clock, 1.0+0/3.9/1.6+0.51 ms cpu, 7->7->3 MB, 7 MB goal, 0 MB stacks, 0 MB globals, 12 P
+gc 5 @303.429s 0%: 0.14+2.5+0.043 ms clock, 1.7+0.50/3.7/0.73+0.51 ms cpu, 7->7->3 MB, 7 MB goal, 0 MB stacks, 0 MB globals, 12 P
+gc 6 @393.573s 0%: 0.23+2.0+0.025 ms clock, 2.8+0.70/3.0/1.8+0.30 ms cpu, 7->7->3 MB, 7 MB goal, 0 MB stacks, 0 MB globals, 12 P
+```
+
+The explanation is as follows:
+
+```text
+Currently, it is:
+ gc # @#s #%: #+#+# ms clock, #+#/#/#+# ms cpu, #->#-># MB, # MB goal, # MB stacks, #MB globals, # P
+where the fields are as follows:
+ gc #         the GC number, incremented at each GC
+ @#s          time in seconds since program start
+ #%           percentage of time spent in GC since program start
+ #+...+#      wall-clock/CPU times for the phases of the GC
+ #->#-># MB   heap size at GC start, at GC end, and live heap, or /gc/scan/heap:bytes
+ # MB goal    goal heap size, or /gc/heap/goal:bytes
+ # MB stacks  estimated scannable stack size, or /gc/scan/stack:bytes
+ # MB globals scannable global size, or /gc/scan/globals:bytes
+ # P          number of processors used, or /sched/gomaxprocs:threads
+```

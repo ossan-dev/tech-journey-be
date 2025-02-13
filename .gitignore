@@ -1,5 +1,6 @@
 coworkingapp
 compiler.txt
 cmd/*.out
+*.out
 cmd/*.svg
 core.*
