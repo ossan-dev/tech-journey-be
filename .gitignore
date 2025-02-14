@@ -4,3 +4,4 @@ cmd/*.out
 *.out
 cmd/*.svg
 core.*
+models/*.txt

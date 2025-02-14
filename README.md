@@ -77,6 +77,72 @@ PASS
 ok      github.com/ossan-dev/coworkingapp/models        9.407s
 ```
 
+### 4.1. `benchstat`
+
+To understand how a change impacts performance we should get a performance delta. `benchstat` helps with the **A/B** testing.  
+First, be sure to have installed it on your machine. If not, please run:
+
+```shell
+go install golang.org/x/perf/cmd/benchstat@latest
+```
+
+To confirm its installation, run `benchstat`.  
+To give it a run, follow this instructions:
+
+1. `cd models`
+2. `go test -run='^$' -bench=. -count=2 > base.txt`. This collects the baseline values for our code
+3. `go test -run='^$' -bench=. -count=2 > new.txt`. This collects the new values after one or more changes
+4. `benchstat base.txt new.txt`. This will compare the two files collected.
+
+    ```text
+    goos: linux
+    goarch: amd64
+    pkg: github.com/ossan-dev/coworkingapp/models
+    cpu: 13th Gen Intel(R) Core(TM) i7-1355U
+                                                          │   base.txt   │               new.txt                │
+                                                          │    sec/op    │    sec/op     vs base                │
+    ParsingJsonFile/ParseModelWithUnmarshal-1-rooms-12      6.674µ ± ∞ ¹   6.298µ ± ∞ ¹       ~ (p=0.667 n=2) ²
+    ParsingJsonFile/ParseModelWithDecoder-1-rooms-12        6.776µ ± ∞ ¹   7.054µ ± ∞ ¹       ~ (p=1.000 n=2) ²
+    ParsingJsonFile/ParseModelWithUnmarshal-999-rooms-12    7.189m ± ∞ ¹   6.905m ± ∞ ¹       ~ (p=0.333 n=2) ²
+    ParsingJsonFile/ParseModelWithDecoder-999-rooms-12      5.258m ± ∞ ¹   5.305m ± ∞ ¹       ~ (p=1.000 n=2) ²
+    ParsingJsonFile/ParseModelWithUnmarshal-9999-rooms-12   36.26m ± ∞ ¹   37.73m ± ∞ ¹       ~ (p=0.333 n=2) ²
+    ParsingJsonFile/ParseModelWithDecoder-9999-rooms-12     34.64m ± ∞ ¹   35.80m ± ∞ ¹       ~ (p=0.333 n=2) ²
+    geomean                                                 1.136m         1.140m        +0.39%
+    ¹ need >= 6 samples for confidence interval at level 0.95
+    ² need >= 4 samples to detect a difference at alpha level 0.05
+
+                                                          │   base.txt    │                new.txt                │
+                                                          │     B/op      │     B/op       vs base                │
+    ParsingJsonFile/ParseModelWithUnmarshal-1-rooms-12      1.156Ki ± ∞ ¹   1.156Ki ± ∞ ¹       ~ (p=1.000 n=2) ²
+    ParsingJsonFile/ParseModelWithDecoder-1-rooms-12        1.375Ki ± ∞ ¹   1.375Ki ± ∞ ¹       ~ (p=1.000 n=2) ²
+    ParsingJsonFile/ParseModelWithUnmarshal-999-rooms-12    2.095Mi ± ∞ ¹   2.094Mi ± ∞ ¹       ~ (p=0.667 n=2) ³
+    ParsingJsonFile/ParseModelWithDecoder-999-rooms-12      1.203Mi ± ∞ ¹   1.203Mi ± ∞ ¹       ~ (p=0.667 n=2) ³
+    ParsingJsonFile/ParseModelWithUnmarshal-9999-rooms-12   27.32Mi ± ∞ ¹   27.32Mi ± ∞ ¹       ~ (p=1.000 n=2) ³
+    ParsingJsonFile/ParseModelWithDecoder-9999-rooms-12     18.03Mi ± ∞ ¹   18.03Mi ± ∞ ¹       ~ (p=1.000 n=2) ³
+    geomean                                                 359.8Ki         359.8Ki        -0.00%
+    ¹ need >= 6 samples for confidence interval at level 0.95
+    ² all samples are equal
+    ³ need >= 4 samples to detect a difference at alpha level 0.05
+
+                                                          │   base.txt   │               new.txt                │
+                                                          │  allocs/op   │  allocs/op    vs base                │
+    ParsingJsonFile/ParseModelWithUnmarshal-1-rooms-12       20.00 ± ∞ ¹    20.00 ± ∞ ¹       ~ (p=1.000 n=2) ²
+    ParsingJsonFile/ParseModelWithDecoder-1-rooms-12         23.00 ± ∞ ¹    23.00 ± ∞ ¹       ~ (p=1.000 n=2) ²
+    ParsingJsonFile/ParseModelWithUnmarshal-999-rooms-12    8.030k ± ∞ ¹   8.030k ± ∞ ¹       ~ (p=1.000 n=2) ²
+    ParsingJsonFile/ParseModelWithDecoder-999-rooms-12      8.018k ± ∞ ¹   8.018k ± ∞ ¹       ~ (p=1.000 n=2) ²
+    ParsingJsonFile/ParseModelWithUnmarshal-9999-rooms-12   80.04k ± ∞ ¹   80.04k ± ∞ ¹       ~ (p=1.000 n=2) ²
+    ParsingJsonFile/ParseModelWithDecoder-9999-rooms-12     80.02k ± ∞ ¹   80.02k ± ∞ ¹       ~ (p=1.000 n=2) ³
+    geomean                                                 2.397k         2.397k        +0.00%
+    ¹ need >= 6 samples for confidence interval at level 0.95
+    ² all samples are equal
+    ³ need >= 4 samples to detect a difference at alpha level 0.05
+    ```
+
+To have significant values, you should stick to, at least, 10 runs of the benchmark. Ideally, this number should be close to 20. The higher the runs are more reduced will be the noise.  
+Benchmarks should also be run on an idle machine to not mess up with the outcome.  
+  
+To speed things up, you can pre-compile the binary by running the command `go test -c`.
+
 ### 5. memprofile, cpuprofile, pprof
 
 > Starting from now, these metrics should be captured while the application is running. Best would be in a production environment where you can experiment the workload. If you're application is not running, you have to write a script that can stress out your app to understand how it behaves under heavy loads.
