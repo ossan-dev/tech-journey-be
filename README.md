@@ -77,7 +77,71 @@ PASS
 ok      github.com/ossan-dev/coworkingapp/models        9.407s
 ```
 
-### 4.1. `benchstat`
+### 4.1. `benchcmp`
+
+To compare two benchmarks you can use the `benchcmp` tool. To check the improvements/degrades made by a souce code change (base vs new).  
+
+First, make sure to have it installed on your machine:
+
+```shell
+go install golang.org/x/tools/cmd/benchcmp@latest
+```
+
+To confirm its installation, run `benchcmp`.  
+  
+To give it a run, follow these instructions:
+
+1. `cd models`
+2. `go test -run='^$' -bench=. -count=2 | tee  benchcmp_base.txt`. This collects the baseline values for our code
+3. `go test -run='^$' -bench=. -count=2 | tee  benchcmp_new.txt`. This collects the new values after one or more changes
+4. `benchcmp benchcmp_base.txt benchcmp_new.txt`. To compare the two benchmark files collected.
+
+    ```text
+    benchcmp is deprecated in favor of benchstat: https://pkg.go.dev/golang.org/x/perf/cmd/benchstat
+    benchmark                                                          old ns/op     new ns/op     delta
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-1-rooms-12        5794          7349          +26.84%
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-1-rooms-12        5849          6477          +10.74%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-1-rooms-12          5981          6323          +5.72%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-1-rooms-12          6031          6304          +4.53%
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-999-rooms-12      5802131       6407896       +10.44%
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-999-rooms-12      6409106       6312111       -1.51%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-999-rooms-12        5159356       5902194       +14.40%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-999-rooms-12        4804592       5462472       +13.69%
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-9999-rooms-12     34110651      38876070      +13.97%
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-9999-rooms-12     37132162      38867294      +4.67%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-9999-rooms-12       33686471      35937839      +6.68%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-9999-rooms-12       33761637      34765636      +2.97%
+
+    benchmark                                                          old allocs     new allocs     delta
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-1-rooms-12        20             20             +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-1-rooms-12        20             20             +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-1-rooms-12          23             23             +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-1-rooms-12          23             23             +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-999-rooms-12      8030           8030           +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-999-rooms-12      8030           8030           +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-999-rooms-12        8018           8018           +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-999-rooms-12        8018           8018           +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-9999-rooms-12     80043          80043          +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-9999-rooms-12     80043          80043          +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-9999-rooms-12       80023          80024          +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-9999-rooms-12       80023          80024          +0.00%
+
+    benchmark                                                          old bytes     new bytes     delta
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-1-rooms-12        1184          1184          +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-1-rooms-12        1184          1184          +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-1-rooms-12          1408          1408          +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-1-rooms-12          1408          1408          +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-999-rooms-12      2196205       2196299       +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-999-rooms-12      2196213       2196189       -0.00%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-999-rooms-12        1261316       1261337       +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-999-rooms-12        1261293       1261312       +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-9999-rooms-12     28643201      28643208      +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithUnmarshal-9999-rooms-12     28643216      28643214      -0.00%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-9999-rooms-12       18910880      18910883      +0.00%
+    BenchmarkParsingJsonFile/ParseModelWithDecoder-9999-rooms-12       18910843      18910884      +0.00%
+    ```
+
+### 4.2. `benchstat`
 
 To understand how a change impacts performance we should get a performance delta. `benchstat` helps with the **A/B** testing.  
 First, be sure to have installed it on your machine. If not, please run:
@@ -87,7 +151,7 @@ go install golang.org/x/perf/cmd/benchstat@latest
 ```
 
 To confirm its installation, run `benchstat`.  
-To give it a run, follow this instructions:
+To give it a run, follow these instructions:
 
 1. `cd models`
 2. `go test -run='^$' -bench=. -count=2 > base.txt`. This collects the baseline values for our code
