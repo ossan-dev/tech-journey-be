@@ -77,6 +77,52 @@ PASS
 ok      github.com/ossan-dev/coworkingapp/models        9.407s
 ```
 
+### 4.0.1 `perflock`
+
+The `perflock` tool is used to run benchmarks with a stable and predictable CPU behavior.
+This is the process to follow to get rid of noise while CPU benchmarking:
+
+1. Make sure to have installed this `sudo apt install power-profiles-daemon` on your machine
+2. Close unnecessary applications
+3. `sudo systemctl stop snapd.service`
+4. Disable background services that might cause CPU spikes
+5. `sudo systemctl stop unattended-upgrades.service`
+6. Disable power management features
+7. `sudo systemctl stop thermald`
+8. `sudo systemctl stop power-profiles-daemon`
+9. Install the `perflock` tool provided by aclements
+10. `GOBIN=$PWD go install github.com/aclements/perflock/cmd/perflock@latest`
+11. `sudo install ./perflock /usr/local/bin/`
+12. Install the `cpupower` tools
+13. `sudo apt install linux-tools-common linux-tools-generic`
+14. Disable CPU frequency scaling (set to performance mode)
+15. `sudo cpupower frequency-set -g performance`
+16. Disable Turbo Boost (to prevent frequency variations). The command is different on AMD-powered system
+17. `echo 0 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo`
+18. Disable CPU core sleep states
+19. `sudo cpupower idle-set -D 0`
+20. If you want to isolate CPUs for benchmark:
+    1. `sudo nano /etc/default/grub`
+    2. Add line `isolcpus=1-3 nohz_full=1-3 rcu_nocbs=1-3`. Add CPU isolation parameters (isolate cores 1-3 for benchmarking). Modify the GRUB_CMDLINE_LINUX to include the line above
+    3. `sudo update-grub`
+    4. `sudo reboot`
+21. In a terminal shell, run `sudo perflock -governor none -daemon` to freeze the CPU settings set above
+22. Issue the benchmark command `go test bench=. > base.txt` (you can generate multiple benchmarks here to compare with `benchstat` tool)
+23. Ctrl + C to quit the `perflock` process
+24. Make sure we no longer have the `perflock` process running with the command `pgrep perflock`
+25. Restoring CPU frequency scaling
+26. `sudo cpupower frequency-set -g powersave`, you can list the available options by running `sudo cpupower frequency-info`
+27. Re-enable Turbo Boost
+28. `echo 1 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo`
+29. Re-enable CPU idle states
+30. `sudo cpupower idle-set -E`
+31. Restart previously stopped services
+32. `sudo systemctl start thermald`
+33. `sudo systemctl start power-profiles-daemon`
+34. `sudo systemctl start snapd.service`
+35. `sudo systemctl start unattended-upgrades.service`
+36. Confirm the power profile used by running `powerprofilesctl`
+
 ### 4.1. `benchcmp`
 
 To compare two benchmarks you can use the `benchcmp` tool. To check the improvements/degrades made by a souce code change (base vs new).  
