@@ -1,14 +1,14 @@
-# Coworking App
+# 1. Coworking App
 
 This project will sustain my upcoming speech about Profiling & Tracing. It emulates whatever needs to be taken into consideration when aiming to improve the performance of a project regarding memory and CPU point of views. It's like a TODO list.
 
-## Steps
+## 1.1. Steps
 
-### 1. Discovery Overview
+### 1.1.1. Discovery Overview
 
 Inspect the source code to get familiar with it. Understand its dependencies, look at config files, potential bottlenecks, and so on.
 
-### 2. Compile-Time Checks
+### 1.1.2. Compile-Time Checks
 
 First and foremost, you should empower the Go compiler about memory/CPU optimizations it takes based on your source code. By running it, you can start addressing things that are relevant to the area of code that needs to further being investigated.
 
@@ -24,7 +24,19 @@ The first optimization is:
     3. Use a slice whenever you know in advance the how many elements do you need (could be switched into an array)
     4. `func literal escapes to heap`: can be fixed by prepending the comment `go:noinline`
 
-### 3. Measure Performance
+### 1.1.3. `sync.Pool`
+
+If you find out there are several allocations (especialy for large objects), you can do some economy with the `sync.Pool` provided by the `sync` package.  
+
+This is an ideal use case if you make several allocations. It can be quite often when working with multiple goroutines. The `sync.Pool` has also the benefit to be thread-safe.
+
+> Please note if you're allocating small objects, the cost might outperform the benefit.
+
+In the `cmd/booking.go` file, we were running hundreds of thousands HTTP requests against our endpoint. We used the worker pool pattern to share the load between the OS cores visible to our Go program (one goroutine for each logical core).  
+  
+However, instead of allocating/deallocating the `*http.Request` several times, we could have used the `sync.Pool` objects. This prevent disposal of each instance after the usage and make everything less aggressive in regards to memory. Instead of disposing it, we put it back in the pool.
+
+### 1.1.4. Measure Performance
 
 Now, you've optmized something and something not. The un-optimized things are left as they were. We need to make sure that they doesn't impact performance. Let's use th e `runtime` package.
 Basically, the only thing we're left with is to wrap the **unoptimized** call within the function invocation `PrintMemStats` which prints some memory information.  
@@ -55,7 +67,7 @@ NumGC = 0
 
 We can overlook this un-optimization since it's not worthwhile. Plus, this code will be run once at the program startup.
 
-### 4. Using Benchmarks
+### 1.1.5. Using Benchmarks
 
 Useful when you've two implementations of the same feature (e.g. two ways to parse JSON files and have the slices with the relevant data).
 The source code (which has two solvers function) is within the file `models/models.go`. Instead the benchmark is contained in the `models/models_test.go`.
@@ -77,7 +89,7 @@ PASS
 ok      github.com/ossan-dev/coworkingapp/models        9.407s
 ```
 
-### 4.0.1 `perflock`
+### 1.1.6. `perflock`
 
 The `perflock` tool is used to run benchmarks with a stable and predictable CPU behavior.
 This is the process to follow to get rid of noise while CPU benchmarking:
@@ -123,7 +135,7 @@ This is the process to follow to get rid of noise while CPU benchmarking:
 35. `sudo systemctl start unattended-upgrades.service`
 36. Confirm the power profile used by running `powerprofilesctl`
 
-### 4.1. `benchcmp`
+### 1.1.7. `benchcmp`
 
 To compare two benchmarks you can use the `benchcmp` tool. To check the improvements/degrades made by a souce code change (base vs new).  
 
@@ -187,7 +199,7 @@ To give it a run, follow these instructions:
     BenchmarkParsingJsonFile/ParseModelWithDecoder-9999-rooms-12       18910843      18910884      +0.00%
     ```
 
-### 4.2. `benchstat`
+### 1.1.8. `benchstat`
 
 To understand how a change impacts performance we should get a performance delta. `benchstat` helps with the **A/B** testing.  
 First, be sure to have installed it on your machine. If not, please run:
@@ -253,7 +265,7 @@ Benchmarks should also be run on an idle machine to not mess up with the outcome
   
 To speed things up, you can pre-compile the binary by running the command `go test -c`.
 
-### 5. memprofile, cpuprofile, pprof
+### 1.1.9. memprofile, cpuprofile, pprof
 
 > Starting from now, these metrics should be captured while the application is running. Best would be in a production environment where you can experiment the workload. If you're application is not running, you have to write a script that can stress out your app to understand how it behaves under heavy loads.
 
@@ -266,11 +278,11 @@ To enable `pprof` we have to first discern between Web and non Web applications.
 Again, we've to make another distinction between Web servers using `DefaultServeMux` and Web servers not using it.
 Since our application is written with the **Gin Web Framework**, we've to make some extra steps, as discussed in the following section.  
 
-#### Web Servers Using `DefaultServeMux`
+#### 1.1.9.1. Web Servers Using `DefaultServeMux`
 
 It's usually enough to add `_ "net/http/pprof"` in the import section.
 
-#### Web Servers Not Using `DefaultServerMux`
+#### 1.1.9.2. Web Servers Not Using `DefaultServerMux`
 
 This is the process for a web server which empowers the `Gin Web Framework`.  
 
@@ -279,7 +291,7 @@ Then, you can register the `pprof` endpoints by referencing `pprof.Register(r)` 
 
 Now, it's time to run the application and let it generates a profile that can be inspected.
 
-#### Collecting Profiles
+#### 1.1.9.3. Collecting Profiles
 
 The first profile you might want to collect is the `allocs` profile.  
 This profile takes into consideration all the memory allocations (well, memory allocations at least of _512 bytes_) since the start of the program. Given the fact that it also takes into consideration past allocations, it doesn't have to be done against an active app (it might be idle in this moment and not doing anything).  
@@ -299,13 +311,13 @@ The `cpu` profile (which for backward-compatibility is still addressed to as `pr
 To start CPU-profiling for _30 seconds_, run the command `curl -v <http://localhost:8080/debug/pprof/profile?seconds=30> > cpu.out`.  
 > Please note this is not a delta profile. It will record all the milliseconds (the unit of measurement for CPU is `ms`) spent in the functions invoked.  
   
-#### Visualizing and Understading Profiles Data
+#### 1.1.9.4. Visualizing and Understading Profiles Data
 
 For the sake of the demo, we won't explain how to visualize/understand the heap profile. We'll focus only on `allocs` and `cpu` profiles.
 
-##### Interactive Console
+##### 1.1.9.4.1. Interactive Console
 
-###### allocs.out
+###### 1.1.9.4.1.1. allocs.out
 
 Let's start from the investigation of the `allocs.out` profile. Those are some steps you can take:
 
@@ -351,7 +363,7 @@ Let's start from the investigation of the `allocs.out` profile. Those are some s
 
 > In case you don't find the annotated source code, make sure to use the `trim_path` option.
 
-###### cpu.out
+###### 1.1.9.4.1.2. cpu.out
 
 Let's start from the investigation of the `cpu.out` profile. Those are some steps you can take:
 
@@ -397,30 +409,30 @@ Let's start from the investigation of the `cpu.out` profile. Those are some step
 
 > In case you don't find the annotated source code, make sure to use the `trim_path` option.
 
-##### Graphical Report Generation
+##### 1.1.9.4.2. Graphical Report Generation
 
 > This generation is done via the `graphviz` package. Be sure to have installed it on your machine. First, it generates a file in the `dot` format. Then, all the others format are generated starting from this.
 
-###### allocs.out
+###### 1.1.9.4.2.1. allocs.out
 
 To display the data in more UI-friendly style, run:
 
 1. `go tool pprof -svg -nodefraction=0 -output allocs.svg allocs.out`. It will generate an SVG file with the data representation, keep in mind to lower down the `nodefraction` value
 
-###### cpu.out
+###### 1.1.9.4.2.2. cpu.out
 
 To display the data in more UI-friendly style, run:
 
 1. `go tool pprof -svg -nodefraction=0 -output cpu.svg cpu.out`. It will generate an SVG file with the data representation, keep in mind to lower down the `nodefraction` value
 
-##### Web UI Interface
+##### 1.1.9.4.3. Web UI Interface
 
-###### heaps.out
+###### 1.1.9.4.3.1. heaps.out
 
 1. `go tool pprof -http=:8083 -inuse_objects heap.out`
 2. `go tool pprof -http=:8083 -alloc_space heap.out`
 
-###### allocs.out
+###### 1.1.9.4.3.2. allocs.out
 
 To analyze data in the web server, run `go tool pprof -http=:8081 allocs.out`.  
   
@@ -431,7 +443,7 @@ We can do the following considerations:
 - almost all the nodes connected to the `gin(*Context).Next` has a thick edge meaning that a lot of resources have been used along that path. Plus, the edges are red. These edges are solid (not dashed), meaning that there are no omitted locations in the middle
 - The call to the `gin.LoggerWithConfig` has been inlined into the caller which is `gin.Next()`, as you can see from the `inline` on the edge
 
-###### cpu.out
+###### 1.1.9.4.3.3. cpu.out
 
 To analyze data in the web server, run `go tool pprof -http=:8082 cpu.out`.  
   
@@ -442,9 +454,9 @@ We can do the following considerations:
 - they all have thick, solid, and red edges meaning they're using some resources and there aren't intermediate calls
 - The call to the `gin.LoggerWithConfig` has been inlined into the caller which is `gin.Next()`, as you can see from the `inline` on the edge
 
-### 6. trace
+### 1.1.10. trace
 
-#### Generate a Trace with the `debug/pprof/trace` Endpoint
+#### 1.1.10.1. Generate a Trace with the `debug/pprof/trace` Endpoint
 
 The steps needed to generate a trace to read are:
 
@@ -452,7 +464,7 @@ The steps needed to generate a trace to read are:
 2. Run the command that starts a 10-second trace. The command is `curl -v <http://localhost:8080/debug/pprof/trace?seconds=10> > trace.out`. It's best to keep it short. Otherwise, it will create multiple trace session to handle large amount of data
 3. Run the script to emulate some workload. The amount of operations done should be reduced to finish within the deadline
 
-#### Generate a Trace with the `FlightRecorder` Feature
+#### 1.1.10.2. Generate a Trace with the `FlightRecorder` Feature
 
 1. First, make sure to set the `FlightRecorder` up in your production app
 2. The setup code in the `main.go` file is:
@@ -493,7 +505,7 @@ The steps needed to generate a trace to read are:
 
 > You can also write the file dynamically in each endpoint based on some custom logic.
 
-#### Read the trace
+#### 1.1.10.3. Read the trace
 
 Those are the considerations:
 
@@ -508,17 +520,17 @@ Two of the options you'll most likely to use are:
 - `View trace by proc`: the usual trace execution image you can find around
 - `Goroutine analysis`: a table listing all the goroutines' details
 
-### 7. `gops` tool
+### 1.1.11. `gops` tool
 
 `gops` is a tool developed at Google (it could be considered like the old version of the `pprof` & `trace` tools). It's needed to monitor and manage Go processes that run either locally or remotely.
 
-#### Installation
+#### 1.1.11.1. Installation
 
 First, you have to install it with the command `go install github.com/google/gops@latest`
 
 To confirm its installation, you can run either `which gops` or `gops --help`.
 
-#### Agent
+#### 1.1.11.2. Agent
 
 The diagnostic agent reports additionally information about processes we might want to further analyze. The information collected are (non exhaustive list):
 
@@ -536,13 +548,13 @@ We changed the code in the `main.go` file to make it listen to the `gops` agent:
  }
 ```
 
-#### Usage
+#### 1.1.11.3. Usage
 
 First, you have to build the source code app.
 `gops` could be used locally by stating the `PID` or remotely by sticking to the `host:port` combination.
 Here, we'll show an example of the local usage. After you have run the binary compiled above, you'll be ready to issue some commands.
 
-##### `gops`
+##### 1.1.11.3.1. `gops`
 
 By running the `gops` tools without any params you can see the `go` processes running on your machine (the columns names have been added by me):
 
@@ -557,7 +569,7 @@ PID    PPID  Name          Go version      Location of the program
 The `Go` version is the one we used to build the program.
 The **\*** (**star**) means the processes running a `gops` agent (in our case we enabled it above).
 
-##### `gops <PID> [duration]`
+##### 1.1.11.3.2. `gops <PID> [duration]`
 
 We run `gops 103370` to see the details of our app.
 
@@ -592,7 +604,7 @@ local/remote:   :::8080 <-> :::0 (LISTEN)
 
 This command will also report the amount of CPU used in the specified period which should match the format `time.ParseDuration` (e.g. `cpu usage (2s): 0.500%`).
 
-##### `gops tree`
+##### 1.1.11.3.3. `gops tree`
 
 It displays all the trees of the current running process:
 
@@ -607,7 +619,7 @@ It displays all the trees of the current running process:
     └── [*]  103370 (coworkingapp) {go1.23.4}
 ```
 
-#### `gops stack`
+#### 1.1.11.4. `gops stack`
 
 `gops stack 103370` will return all the active stack traces per goroutines belonging to the requested `PID`.
 
@@ -641,7 +653,7 @@ main.main()
 ...
 ```
 
-#### `gops memstats`
+#### 1.1.11.5. `gops memstats`
 
 By running `gops memstats 103370`, you could see the memory stats of the requested process:
 
@@ -678,22 +690,22 @@ enable-gc: true
 debug-gc: false
 ```
 
-#### `gops gc <PID>`
+#### 1.1.11.6. `gops gc <PID>`
 
 You can force a GC cycle on the target process. It will block until the GC cycle has been completed.
 
-#### `gops setgc`
+#### 1.1.11.7. `gops setgc`
 
 It will set the GC on the target process. Examples are:
 
 1. `gops setgc <PID> 10`: to set it to 10%
 2. `gops setgc <PID> off`: to turn the GC off
 
-#### `gops version <PID>`
+#### 1.1.11.8. `gops version <PID>`
 
 It's used to see with which Go version a program has been built. The command `gops version 103370` yield `go1.23.4`.
 
-#### `gops stats <PID>`
+#### 1.1.11.9. `gops stats <PID>`
 
 It prints runtime statistics. `gops stats 103370` prints:
 
@@ -704,7 +716,7 @@ GOMAXPROCS: 12
 num CPU: 12
 ```
 
-#### `gops pprof` commands
+#### 1.1.11.10. `gops pprof` commands
 
 By using `gops` you can also access the capabilities of the `pprof` tool.
 Some commands are:
@@ -715,11 +727,11 @@ Some commands are:
 
 > **Please be sure to not have started a trace in your web server, otherwise you'll get an error similar to this `gops: runtime error: tracing is already enabled`.**
 
-### 8. Stress-Tests Tools
+### 1.1.12. Stress-Tests Tools
 
 Here, we'll see a couple of tools that will help you in smoothening your stress-testing experience. The first one is `hey`.
 
-#### The `hey` tool
+#### 1.1.12.1. The `hey` tool
 
 First, be sure to have `hey` tool installed on your machine. You can download it from [here](https://github.com/rakyll/hey). After you downloaded the binary, please move it to the `$PATH` folder to run it anywhere.
 
@@ -867,7 +879,7 @@ Here's a list commands run:
                             (default for current machine is 12 cores)
     ```
 
-#### The Apache Bench or `ab` tool
+#### 1.1.12.2. The Apache Bench or `ab` tool
 
 Another tool for performance testing is Apache Bench. The installation process is:
 
@@ -944,7 +956,7 @@ We can run some commands:
     5. _Requests per seconds_: self-explanatory
     6. _Time per request_: self-explanatory
 
-### 9. coredumps, crashdumps
+### 1.1.13. coredumps, crashdumps
 
 Before you start looking into coredumps, make sure your `ulimit` is set to something reasonable. It defaults to `0`, which means the max core file size can be `zero`. On development machine, this can be set to `unlimited` by using this command:
 
@@ -981,12 +993,12 @@ From this point you have all the commands of the `dlv` interactive console such 
 
 Some features will be disabled since the core dump is not an active process but it's a snapshot.
 
-### 10. Go Env Vars
+### 1.1.14. Go Env Vars
 
 We can set Go env vars to change the runtime behavior.
 > Make sure to rebuild the binary since the compiler optimizations have been disabled by the last build command.
 
-#### GOGC
+#### 1.1.14.1. GOGC
 
 The `GOGC` var sets the aggressviness of the Garbage Collector. Default Value `100` (when the heap doubles in size).
 
@@ -994,13 +1006,13 @@ The `GOGC` var sets the aggressviness of the Garbage Collector. Default Value `1
 2. To run it **more** often, run `GOGC=20 ./coworkingapp`
 3. To disable it, `GOGC=off ./coworkingapp`
 
-### GOTRACEBACK
+### 1.1.15. GOTRACEBACK
 
 The `GOTRACEBACK` controls the level of details when a panic hits the top of our program. Default Value `single` (prints only the goroutine which seems to have caused the issue).
 
 1. To run it and suppress all tracebacks, `GOTRACEBACK=none ./coworkingapp`
 
-### GOMAXPROCS
+### 1.1.16. GOMAXPROCS
 
 > Since we're going to use the trace tool here, please be sure to be able to download a trace from the trace endpoint. If not, disable the trace added in the `gops` section and rebuild the binary.  
   
@@ -1011,7 +1023,7 @@ The `GOMAXPROCS` controls the number of OS threads allocated to goroutines in ou
 3. Open the trace with `go tool trace four_procs_trace.out`
 4. Select `View by procs`. You should see a decreased number of procs used
 
-### GOMEMLIMIT
+### 1.1.17. GOMEMLIMIT
 
 Used to set the maximum amount of memory the Go program can use. This is usually set when you experience `OOM` crashes. A reasonable value could be the 80% of the total machine memory.
 To limit the program to use only 5MiB, you should use the command:
@@ -1020,7 +1032,7 @@ To limit the program to use only 5MiB, you should use the command:
 GOMEMLIMIT=5000000 ./coworkingapp
 ```
 
-### GODEBUG
+### 1.1.18. GODEBUG
 
 To better understand the GC performance, we can enable the `gctrace` facility. To enable the program to report the GC data, you should run it with this command:
 

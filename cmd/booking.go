@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"runtime"
@@ -11,6 +12,14 @@ import (
 	"sync"
 	"time"
 )
+
+var pool = &sync.Pool{
+	New: func() any {
+		r, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "http://localhost:8080/bookings", nil)
+		r.Header.Set("Content-Type", "application/json")
+		return r
+	},
+}
 
 func prepareBookingsToMake(bookingsToMake map[string]int, bookings chan<- string) {
 	for k, v := range bookingsToMake {
@@ -46,17 +55,15 @@ func worker(client *http.Client, token string, bookings <-chan string, wg *sync.
 }
 
 func addBooking(client *http.Client, token string, roomID string) (err error) {
-	r, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "http://localhost:8080/bookings", strings.NewReader(fmt.Sprintf(`{"room_id":"%v","booked_on":"2025-01-09"}`, roomID)))
-	if err != nil {
-		panic(err)
-	}
+	r := pool.Get().(*http.Request)
+	r.Body = io.NopCloser(strings.NewReader(fmt.Sprintf(`{"room_id":"%v","booked_on":"2025-01-09"}`, roomID)))
 	r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
-	r.Header.Set("Content-Type", "application/json")
 	res, err := client.Do(r)
 	if err != nil {
 		return
 	}
 	defer res.Body.Close()
+	pool.Put(r)
 	if res.StatusCode != http.StatusCreated {
 		err = fmt.Errorf("booking not created")
 		return
