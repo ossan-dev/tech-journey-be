@@ -6,3 +6,5 @@ cmd/*.svg
 core.*
 models/*.txt
 cmd/*.txt
+cmd/perf.data
+cmd/booking_cmd

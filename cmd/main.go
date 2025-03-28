@@ -8,6 +8,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
+const numberOfBookings = 30000
+
 func main() {
 	httpClient := http.Client{}
 
@@ -33,11 +35,11 @@ func main() {
 		panic(err)
 	}
 	// define how many bookings do you want to have per room
-	bookings := make(chan string, 3000)
+	bookings := make(chan string, numberOfBookings)
 	bookingsToMake := make(map[string]int, 3)
-	bookingsToMake[roomsIDs[0]] = 1000
-	bookingsToMake[roomsIDs[1]] = 1000
-	bookingsToMake[roomsIDs[2]] = 1000
+	bookingsToMake[roomsIDs[0]] = numberOfBookings / 3
+	bookingsToMake[roomsIDs[1]] = numberOfBookings / 3
+	bookingsToMake[roomsIDs[2]] = numberOfBookings / 3
 	prepareBookingsToMake(bookingsToMake, bookings)
 
 	// batch bookings creation

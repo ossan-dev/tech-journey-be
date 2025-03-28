@@ -454,9 +454,33 @@ We can do the following considerations:
 - they all have thick, solid, and red edges meaning they're using some resources and there aren't intermediate calls
 - The call to the `gin.LoggerWithConfig` has been inlined into the caller which is `gin.Next()`, as you can see from the `inline` on the edge
 
-### 1.1.10. trace
+### 1.1.10. `perf` Linux tool
 
-#### 1.1.10.1. Generate a Trace with the `debug/pprof/trace` Endpoint
+To profile CPU-bound functions of the tools used to invoke the tests, you should follow this guide:
+
+1. located in `/cmd` folder
+2. `go build -gcflags "-N -l" -o booking_cmd` => build by disabling optimizations and inlining
+3. `./booking_cmd` => to run the program to profile
+4. in another shell, run `sudo perf record -p $(pidof booking_cmd) -g --call-graph dwarf sleep 45` => it profiles the program specified by the PID
+    1. `record` tells to profile data
+    2. `-p $(pidof booking_cmd)` specifies the PID of the Go program to profile
+    3. `-g`enables call-graph recording, which shows the function call stack leading to the events
+    4. `--call-graph dwarf` specifies the method for capturing the call graph (DWARF Debugging Information)
+5. it produces something like (and a `perf.data` file):
+
+    ```text
+    [ perf record: Woken up 1586 times to write data ]
+    [ perf record: Captured and wrote 407,624 MB perf.data (50367 samples) ]
+    ```
+
+6. `sudo perf report -i perf.data --stdio` to visualize data in the STD console
+7. `sudo perf report -i perf.data` to visualize data in the interactive console
+
+> The recommend way to visualize stuff is via the flamegraph by [Brendan Gregg](https://github.com/brendangregg/FlameGraph)
+
+### 1.1.11. trace
+
+#### 1.1.11.1. Generate a Trace with the `debug/pprof/trace` Endpoint
 
 The steps needed to generate a trace to read are:
 
@@ -464,7 +488,7 @@ The steps needed to generate a trace to read are:
 2. Run the command that starts a 10-second trace. The command is `curl -v <http://localhost:8080/debug/pprof/trace?seconds=10> > trace.out`. It's best to keep it short. Otherwise, it will create multiple trace session to handle large amount of data
 3. Run the script to emulate some workload. The amount of operations done should be reduced to finish within the deadline
 
-#### 1.1.10.2. Generate a Trace with the `FlightRecorder` Feature
+#### 1.1.11.2. Generate a Trace with the `FlightRecorder` Feature
 
 1. First, make sure to set the `FlightRecorder` up in your production app
 2. The setup code in the `main.go` file is:
@@ -505,7 +529,7 @@ The steps needed to generate a trace to read are:
 
 > You can also write the file dynamically in each endpoint based on some custom logic.
 
-#### 1.1.10.3. Read the trace
+#### 1.1.11.3. Read the trace
 
 Those are the considerations:
 
@@ -520,17 +544,17 @@ Two of the options you'll most likely to use are:
 - `View trace by proc`: the usual trace execution image you can find around
 - `Goroutine analysis`: a table listing all the goroutines' details
 
-### 1.1.11. `gops` tool
+### 1.1.12. `gops` tool
 
 `gops` is a tool developed at Google (it could be considered like the old version of the `pprof` & `trace` tools). It's needed to monitor and manage Go processes that run either locally or remotely.
 
-#### 1.1.11.1. Installation
+#### 1.1.12.1. Installation
 
 First, you have to install it with the command `go install github.com/google/gops@latest`
 
 To confirm its installation, you can run either `which gops` or `gops --help`.
 
-#### 1.1.11.2. Agent
+#### 1.1.12.2. Agent
 
 The diagnostic agent reports additionally information about processes we might want to further analyze. The information collected are (non exhaustive list):
 
@@ -548,13 +572,13 @@ We changed the code in the `main.go` file to make it listen to the `gops` agent:
  }
 ```
 
-#### 1.1.11.3. Usage
+#### 1.1.12.3. Usage
 
 First, you have to build the source code app.
 `gops` could be used locally by stating the `PID` or remotely by sticking to the `host:port` combination.
 Here, we'll show an example of the local usage. After you have run the binary compiled above, you'll be ready to issue some commands.
 
-##### 1.1.11.3.1. `gops`
+##### 1.1.12.3.1. `gops`
 
 By running the `gops` tools without any params you can see the `go` processes running on your machine (the columns names have been added by me):
 
@@ -569,7 +593,7 @@ PID    PPID  Name          Go version      Location of the program
 The `Go` version is the one we used to build the program.
 The **\*** (**star**) means the processes running a `gops` agent (in our case we enabled it above).
 
-##### 1.1.11.3.2. `gops <PID> [duration]`
+##### 1.1.12.3.2. `gops <PID> [duration]`
 
 We run `gops 103370` to see the details of our app.
 
@@ -604,7 +628,7 @@ local/remote:   :::8080 <-> :::0 (LISTEN)
 
 This command will also report the amount of CPU used in the specified period which should match the format `time.ParseDuration` (e.g. `cpu usage (2s): 0.500%`).
 
-##### 1.1.11.3.3. `gops tree`
+##### 1.1.12.3.3. `gops tree`
 
 It displays all the trees of the current running process:
 
@@ -619,7 +643,7 @@ It displays all the trees of the current running process:
     └── [*]  103370 (coworkingapp) {go1.23.4}
 ```
 
-#### 1.1.11.4. `gops stack`
+#### 1.1.12.4. `gops stack`
 
 `gops stack 103370` will return all the active stack traces per goroutines belonging to the requested `PID`.
 
@@ -653,7 +677,7 @@ main.main()
 ...
 ```
 
-#### 1.1.11.5. `gops memstats`
+#### 1.1.12.5. `gops memstats`
 
 By running `gops memstats 103370`, you could see the memory stats of the requested process:
 
@@ -690,22 +714,22 @@ enable-gc: true
 debug-gc: false
 ```
 
-#### 1.1.11.6. `gops gc <PID>`
+#### 1.1.12.6. `gops gc <PID>`
 
 You can force a GC cycle on the target process. It will block until the GC cycle has been completed.
 
-#### 1.1.11.7. `gops setgc`
+#### 1.1.12.7. `gops setgc`
 
 It will set the GC on the target process. Examples are:
 
 1. `gops setgc <PID> 10`: to set it to 10%
 2. `gops setgc <PID> off`: to turn the GC off
 
-#### 1.1.11.8. `gops version <PID>`
+#### 1.1.12.8. `gops version <PID>`
 
 It's used to see with which Go version a program has been built. The command `gops version 103370` yield `go1.23.4`.
 
-#### 1.1.11.9. `gops stats <PID>`
+#### 1.1.12.9. `gops stats <PID>`
 
 It prints runtime statistics. `gops stats 103370` prints:
 
@@ -716,7 +740,7 @@ GOMAXPROCS: 12
 num CPU: 12
 ```
 
-#### 1.1.11.10. `gops pprof` commands
+#### 1.1.12.10. `gops pprof` commands
 
 By using `gops` you can also access the capabilities of the `pprof` tool.
 Some commands are:
@@ -727,11 +751,11 @@ Some commands are:
 
 > **Please be sure to not have started a trace in your web server, otherwise you'll get an error similar to this `gops: runtime error: tracing is already enabled`.**
 
-### 1.1.12. Stress-Tests Tools
+### 1.1.13. Stress-Tests Tools
 
 Here, we'll see a couple of tools that will help you in smoothening your stress-testing experience. The first one is `hey`.
 
-#### 1.1.12.1. The `hey` tool
+#### 1.1.13.1. The `hey` tool
 
 First, be sure to have `hey` tool installed on your machine. You can download it from [here](https://github.com/rakyll/hey). After you downloaded the binary, please move it to the `$PATH` folder to run it anywhere.
 
@@ -879,7 +903,7 @@ Here's a list commands run:
                             (default for current machine is 12 cores)
     ```
 
-#### 1.1.12.2. The Apache Bench or `ab` tool
+#### 1.1.13.2. The Apache Bench or `ab` tool
 
 Another tool for performance testing is Apache Bench. The installation process is:
 
@@ -956,7 +980,7 @@ We can run some commands:
     5. _Requests per seconds_: self-explanatory
     6. _Time per request_: self-explanatory
 
-### 1.1.13. coredumps, crashdumps
+### 1.1.14. coredumps, crashdumps
 
 Before you start looking into coredumps, make sure your `ulimit` is set to something reasonable. It defaults to `0`, which means the max core file size can be `zero`. On development machine, this can be set to `unlimited` by using this command:
 
@@ -993,12 +1017,12 @@ From this point you have all the commands of the `dlv` interactive console such 
 
 Some features will be disabled since the core dump is not an active process but it's a snapshot.
 
-### 1.1.14. Go Env Vars
+### 1.1.15. Go Env Vars
 
 We can set Go env vars to change the runtime behavior.
 > Make sure to rebuild the binary since the compiler optimizations have been disabled by the last build command.
 
-#### 1.1.14.1. GOGC
+#### 1.1.15.1. GOGC
 
 The `GOGC` var sets the aggressviness of the Garbage Collector. Default Value `100` (when the heap doubles in size).
 
@@ -1006,13 +1030,13 @@ The `GOGC` var sets the aggressviness of the Garbage Collector. Default Value `1
 2. To run it **more** often, run `GOGC=20 ./coworkingapp`
 3. To disable it, `GOGC=off ./coworkingapp`
 
-### 1.1.15. GOTRACEBACK
+### 1.1.16. GOTRACEBACK
 
 The `GOTRACEBACK` controls the level of details when a panic hits the top of our program. Default Value `single` (prints only the goroutine which seems to have caused the issue).
 
 1. To run it and suppress all tracebacks, `GOTRACEBACK=none ./coworkingapp`
 
-### 1.1.16. GOMAXPROCS
+### 1.1.17. GOMAXPROCS
 
 > Since we're going to use the trace tool here, please be sure to be able to download a trace from the trace endpoint. If not, disable the trace added in the `gops` section and rebuild the binary.  
   
@@ -1023,7 +1047,7 @@ The `GOMAXPROCS` controls the number of OS threads allocated to goroutines in ou
 3. Open the trace with `go tool trace four_procs_trace.out`
 4. Select `View by procs`. You should see a decreased number of procs used
 
-### 1.1.17. GOMEMLIMIT
+### 1.1.18. GOMEMLIMIT
 
 Used to set the maximum amount of memory the Go program can use. This is usually set when you experience `OOM` crashes. A reasonable value could be the 80% of the total machine memory.
 To limit the program to use only 5MiB, you should use the command:
@@ -1032,7 +1056,7 @@ To limit the program to use only 5MiB, you should use the command:
 GOMEMLIMIT=5000000 ./coworkingapp
 ```
 
-### 1.1.18. GODEBUG
+### 1.1.19. GODEBUG
 
 To better understand the GC performance, we can enable the `gctrace` facility. To enable the program to report the GC data, you should run it with this command:
 
