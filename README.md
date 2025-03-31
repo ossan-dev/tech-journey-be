@@ -996,8 +996,12 @@ To check the value, you can run `ulimit -c` and you should get back `unlimited`.
     **Please note that the values of variables won't be clear due to compiler optimizations.**
 2. Make sure to build the app with the command: `go build -gcflags=all="-N -l" -o coworkingapp`
 3. Run it with the command `GOTRACEBACK=crash ./coworkingapp`
-4. Send the signal `SIGQUIT` to the web server within the same active shell. The keyboard shortcut should eb `Ctrl + \` but this may vary based on your machine/shell/IDE
-5. You will have the program stack traces printed in the console (and a core dump file written)
+4. Send the signal `SIGQUIT` to the web server within the same active shell. The keyboard shortcut should be `Ctrl + \` but this may vary based on your machine/shell/IDE
+5. You will have the program stak traces printed in the console (and a core dump file written)
+6. use the `coredumpctl` tool to load the crashdump file
+7. to install it: `sudo apt-get install systemd-coredump`
+8. run `coredumpctl` to list the crashdumps you can load
+9. `coredumpctl debug --debugger=dlv --debugger-arguments=core` to load the crashdump
 
 To get a core dump without having to kill the process, you can follow this:
 
