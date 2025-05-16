@@ -114,6 +114,7 @@ func seedData(db *gorm.DB) {
 
 	rooms := make([]models.Room, 0, 3)
 	if err := models.ParseModelWithUnmarshal(&rooms, "rooms.json"); err != nil {
+		panic(err)
 	}
 	db.Create(&rooms)
 }

@@ -757,7 +757,7 @@ Here, we'll see a couple of tools that will help you in smoothening your stress-
 
 #### 1.1.13.1. The `hey` tool
 
-First, be sure to have `hey` tool installed on your machine. You can download it from [here](https://github.com/rakyll/hey). After you downloaded the binary, please move it to the `$PATH` folder to run it anywhere.
+First, be sure to have `hey` tool installed on your machine. You can download it from [their GitHub repo](https://github.com/rakyll/hey). After you downloaded the binary, please move it to the `$PATH` folder to run it anywhere.
 
 > You can rename to **hey** the binary.
 
